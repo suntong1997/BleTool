@@ -1,0 +1,60 @@
+<resources>
+    <string name="app_name">蓝牙调试工具</string>
+
+    <string name="ble_not_supported">设备不支持BLE</string>
+    <string name="label_data">数据:</string>
+    <string name="label_device_address">设备地址:</string>
+    <string name="label_state">状态:</string>
+    <string name="no_data">没有数据</string>
+    <string name="connected">已连接</string>
+    <string name="disconnected">已断开</string>
+    <string name="title_devices">扫描BLE设备</string>
+    <string name="error_bluetooth_not_supported">设备不支持蓝牙</string>
+
+    <string name="unknown_device">未知设备</string>
+    <string name="unknown_characteristic">未知特征</string>
+    <string name="unknown_service">未知服务</string>
+    <string name="scan_devices">扫描设备</string>
+
+    <!-- Menu items -->
+    <string name="menu_connect">连接</string>
+    <string name="menu_disconnect">断开</string>
+    <string name="menu_scan">扫描</string>
+    <string name="menu_stop">停止</string>
+    <string name="empty_num">0</string>
+    <string name="no_heartrate_characteristic">获取不到心率特征</string>
+    <string name="no_heartrate_service">获取不到心率服务</string>
+    <string name="null_heart_rate">--</string>
+    <string name="heart_rate_value">心率:</string>
+    <string name="menu_share">分享</string>
+    <string name="menu_optional">选择</string>
+    <string name="menu_cancel">取消</string>
+    <string name="sync_time">同步时间</string>
+    <string name="read_time">读取时间</string>
+    <string name="read_battery">读取电量</string>
+    <string name="clear_log">清除记录</string>
+    <string name="system_update">系统更新</string>
+    <string name="sport_notification">运动通知</string>
+    <string name="test_vibrato">震 动</string>
+    <string name="flash_id">flashId</string>
+    <string name="g_sensor">G-sensor</string>
+    <string name="hr_control">心率控制</string>
+    <string name="history_step">历史步数</string>
+    <string name="title_activity_ble_funtion">BleFuntionActivity</string>
+    <!-- Strings used for fragments for navigation -->
+    <string name="first_fragment_label">First Fragment</string>
+    <string name="second_fragment_label">Second Fragment</string>
+    <string name="next">Next</string>
+    <string name="previous">Previous</string>
+
+    <string name="hello_first_fragment">Hello first fragment</string>
+    <string name="hello_second_fragment">Hello second fragment. Arg: %1$s</string>
+    <string name="device_update">设备升级</string>
+    <string name="function_test">功能测试</string>
+    <string name="unconnected_device">未连接设备</string>
+    <string name="null_data">数据为空</string>
+    <string name="disconnected__failed_update">连接已断开,更新失败</string>
+    <string name="complete_read">读取完成</string>
+    <string name="failed_update">更新失败</string>
+    <string name="failed_write">写入失败</string>
+</resources>
