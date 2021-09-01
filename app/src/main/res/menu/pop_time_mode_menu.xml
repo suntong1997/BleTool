@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/mode_12h"
+        android:title="12H" />
+
+    <item
+        android:id="@+id/mode_24h"
+        android:title="24H" />
+</menu>

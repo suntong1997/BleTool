@@ -5,7 +5,6 @@ import android.annotation.SuppressLint;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.TimeZone;
 
 import example.suntong.bletool.service.BluetoothLeService;
@@ -17,11 +16,16 @@ public class SyncDate {
         @SuppressLint("SimpleDateFormat")
         DateFormat dateFormat = new SimpleDateFormat("z");
         dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
-        String gmt = dateFormat.format(new Date());
+
+        TimeZone aDefault = TimeZone.getDefault();
+        String zone = aDefault.getDisplayName(false, TimeZone.SHORT);
+        String[] split = zone.split("\\+");
+
+        String[] time = split[1].split(":");
 
         // 获取gmt时间
-        byte gmtHour = (byte) Integer.parseInt(gmt.substring(4, 6));
-        byte gmtMin = (byte) Integer.parseInt(gmt.substring(7, 9));
+        byte gmtHour = (byte) Integer.parseInt(String.format("%02x", Integer.parseInt(time[0])).toUpperCase());
+        byte gmtMin = (byte) Integer.parseInt(String.format("%02x", Integer.parseInt(time[1])).toUpperCase());
 
         Calendar calendar = Calendar.getInstance();
         String year = String.valueOf(calendar.get(Calendar.YEAR));

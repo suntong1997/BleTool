@@ -1,7 +1,6 @@
-package example.suntong.bletool.activities;
+package example.suntong.bletool.ui.activitiy;
 
 import android.content.ComponentName;
-import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.Bundle;
@@ -9,8 +8,6 @@ import android.os.IBinder;
 import android.util.Log;
 
 import androidx.appcompat.app.AppCompatActivity;
-
-import java.util.Calendar;
 
 import example.suntong.bletool.R;
 import example.suntong.bletool.service.BluetoothLeService;
@@ -64,7 +61,6 @@ public class BaseActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-
         Intent intent = new Intent(this, BluetoothLeService.class);
         unbindService(mServiceConnection);
         stopService(intent);

@@ -17,4 +17,5 @@ public class BluetoothCommand {
     public static final byte[] START_TEMP_CMD = {0x01, 0x1B, 0x05, 0x00, 0x01};
     public static final byte[] STOP_TEMP_CMD = {0x01, 0x1B, 0x05, 0x00, 0x02};
     public static final byte[] TEST_VIBRATO_CMD={0X08, (byte) 0X80,0X04,0X00};
+    public static final byte[] GET_MAC_ADDRESS={0x00,0x23,0x04,0x00};
 }

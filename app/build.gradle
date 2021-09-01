@@ -4,12 +4,12 @@ plugins {
 }
 
 android {
-    compileSdk 28
+    compileSdk 30
 
     defaultConfig {
         applicationId "example.suntong.bletool"
         minSdk 21
-        targetSdk 28
+        targetSdk 30
         versionCode 1
         versionName "1.0"
 
@@ -45,4 +45,5 @@ dependencies {
 
     implementation 'com.jakewharton:butterknife:10.2.3'
     annotationProcessor 'com.jakewharton:butterknife-compiler:10.2.3'
+    implementation 'no.nordicsemi.android:dfu:1.9.0'
 }

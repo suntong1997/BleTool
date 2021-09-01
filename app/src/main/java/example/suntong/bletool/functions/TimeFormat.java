@@ -9,24 +9,23 @@ import example.suntong.bletool.interfaces.Iview;
 import example.suntong.bletool.R;
 import example.suntong.bletool.service.BluetoothLeService;
 
-public class TempControl {
-
-    public static void onRequestLiveTempData(Context context, Iview view, Button tempControlBtn, BluetoothLeService bluetoothLeService, String deviceAddress) {
-        PopupMenu popupMenu = new PopupMenu(context, tempControlBtn);
-        popupMenu.getMenuInflater().inflate(R.menu.pop_temp_menu, popupMenu.getMenu());
+public class TimeFormat {
+    public static void onSetTimeFormat(Context context, Iview view, Button setTimeModeBtn, BluetoothLeService bluetoothLeService, String deviceAddress) {
+        PopupMenu popupMenu = new PopupMenu(context, setTimeModeBtn);
+        popupMenu.getMenuInflater().inflate(R.menu.pop_time_mode_menu, popupMenu.getMenu());
         popupMenu.show();
         popupMenu.setOnMenuItemClickListener(
                 item -> {
                     switch (item.getItemId()) {
-                        case R.id.start_temp:
+                        case R.id.mode_12h:
                             bluetoothLeService.writeCharacteristic(
-                                    deviceAddress, BluetoothCommand.START_TEMP_CMD);
-//                            view.displayData("接收实时温度数值");
+                                    deviceAddress, BluetoothCommand.SETTIMEFORMATTO12H);
+
                             break;
-                        case R.id.stop_temp:
+                        case R.id.mode_24h:
                             bluetoothLeService.writeCharacteristic(
-                                    deviceAddress, BluetoothCommand.STOP_TEMP_CMD);
-//                            view.displayData("停止接收温度数值");
+                                    deviceAddress, BluetoothCommand.SETTIMEFORMATTO24H);
+
                             break;
                     }
                     return true;

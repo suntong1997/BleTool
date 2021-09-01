@@ -1,18 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
-        android:id="@+id/update_ui"
+        android:id="@+id/menu_update_ui"
         android:title="界面更新" />
 
     <item
-        android:id="@+id/update_font"
+        android:id="@+id/menu_update_font"
         android:title="字库更新" />
 
     <item
-        android:id="@+id/updtae_ota"
+        android:id="@+id/menu_update_ota"
         android:title="固件更新" />
     <item
-        android:id="@+id/updtae_face"
+        android:id="@+id/menu_update_face"
         android:title="表盘更新" />
+    <item
+        android:id="@+id/menu_update_dfu"
+        android:title="DFU更新" />
 
 </menu>

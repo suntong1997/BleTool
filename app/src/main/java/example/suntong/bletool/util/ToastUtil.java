@@ -1,4 +1,4 @@
-package example.suntong.bletool;
+package example.suntong.bletool.util;
 
 import android.content.Context;
 import android.widget.Toast;

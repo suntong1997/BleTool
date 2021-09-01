@@ -28,14 +28,8 @@ public class BluetoothLeService extends Service {
 
     private BluetoothManager mBluetoothManager;
     private BluetoothAdapter mBluetoothAdapter;
-    private String mBluetoothDeviceAddress;
     private BluetoothGatt mBluetoothGatt;
-    private int mConnectionState = STATE_DISCONNECTED;
-    private Map<String, BluetoothGatt> gattMap = new HashMap<>();
-
-    private static final int STATE_DISCONNECTED = 0;
-    private static final int STATE_CONNECTING = 1;
-    private static final int STATE_CONNECTED = 2;
+    private Map<String, BluetoothGatt> gattMap = new HashMap<>();//记录连接到的蓝牙地址
 
     public static final String ACTION_GATT_CONNECTED =
             "com.example.bluetooth.le.ACTION_GATT_CONNECTED";
@@ -46,7 +40,6 @@ public class BluetoothLeService extends Service {
     public static final String ACTION_DATA_AVAILABLE =
             "com.example.bluetooth.le.ACTION_DATA_AVAILABLE";
     public static final String EXTRA_DATA = "com.example.bluetooth.le.EXTRA_DATA";
-
     public static final String ACTION_STOP_RECEIVE = "ACTION_STOP_RECEIVE";
     public static final String CHARACTERISTIC_WRITE_FAILURE = "CHARACTERISTIC_WRITE_FAILURE";
     public static final String CHARACTERISTIC_WRITE_SUCCESS = "CHARACTERISTIC_WRITE_SUCCESS";
@@ -62,7 +55,6 @@ public class BluetoothLeService extends Service {
                     String intentAction;
                     if (newState == BluetoothProfile.STATE_CONNECTED) { // 收到连接回调
                         intentAction = ACTION_GATT_CONNECTED;
-                        mConnectionState = STATE_CONNECTED;
                         gattMap.put(gatt.getDevice().getAddress(), gatt);
                         broadcastUpdate(intentAction, gatt);
                         Log.w(TAG, "连接到设备" + gatt.getDevice().getName());
@@ -70,8 +62,6 @@ public class BluetoothLeService extends Service {
 
                     } else if (newState == BluetoothProfile.STATE_DISCONNECTED) { // 收到断开回调
                         intentAction = ACTION_GATT_DISCONNECTED;
-                        mConnectionState = STATE_DISCONNECTED;
-
                         gattMap.remove(gatt.getDevice().getAddress()); // 断开后将句柄从map中移除
                         Log.i(TAG, "Disconnected from GATT server." + gatt.getDevice().getName());
                         broadcastUpdate(intentAction, gatt);
@@ -157,9 +147,6 @@ public class BluetoothLeService extends Service {
                 intent.putExtra(EXTRA_DATA, stringBuilder.toString());
             }
         }
-        //        final String data = new String(characteristic.getValue());
-        //        intent.putExtra(EXTRA_DATA,data);
-
         sendBroadcast(intent);
     }
 
@@ -174,7 +161,6 @@ public class BluetoothLeService extends Service {
             for (byte byteChar : data) stringBuilder.append(String.format("%02X ", byteChar));
             intent.putExtra(EXTRA_DATA, new String(data) + "\n" + stringBuilder.toString());
         }
-        //        }
         sendBroadcast(intent);
     }
 
@@ -203,7 +189,7 @@ public class BluetoothLeService extends Service {
         if (mBluetoothManager == null) {
             mBluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
             if (mBluetoothManager == null) {
-                Log.e(TAG, "初始化蓝牙管理器失败");
+                Log.e(TAG, "蓝牙管理器初始化失败");
                 return false;
             }
         }
@@ -238,14 +224,13 @@ public class BluetoothLeService extends Service {
         mBluetoothGatt = device.connectGatt(this, false, mGattCallback);
         Log.d(TAG, "connect: " + mBluetoothGatt);
         Log.d(TAG, "尝试创建新连接" + device.getAddress());
-        mBluetoothDeviceAddress = address;
-        mConnectionState = STATE_CONNECTING;
+
         return true;
     }
 
     public void disconnect(String address) {
         if (mBluetoothAdapter == null || mBluetoothGatt == null) {
-            Log.w(TAG, "BluetoothAdapter not initialized");
+            Log.w(TAG, "蓝牙适配器未初始化");
             return;
         }
         BluetoothGatt gatt = gattMap.get(address);
@@ -263,7 +248,7 @@ public class BluetoothLeService extends Service {
 
     public void writeCharacteristic(String address, byte[] data) {
         if (mBluetoothAdapter == null || mBluetoothGatt == null) {
-            Log.w(TAG, "BluetoothAdapter not initialized");
+            Log.w(TAG, "蓝牙适配器未初始化");
             return;
         }
 
@@ -276,13 +261,10 @@ public class BluetoothLeService extends Service {
                 if (rxCharacteristic != null) {
                     rxCharacteristic.setValue(data);
                     boolean success = gatt.writeCharacteristic(rxCharacteristic);
-                    Log.w(TAG, "writeCharacteristic-success: " + success);
+                    Log.w(TAG, "writeCharacteristic: " + success);
                     if (!success) {
                         broadcastUpdate(BluetoothLeService.CHARACTERISTIC_WRITE_FAILURE);
                     }
-                    BluetoothGattCharacteristic txCharacteristic =
-                            service.getCharacteristic(UUID.fromString(GattAttributes.TX_CHARACTERISTIC));
-                    //                    setCharacteristicNotification(txCharacteristic, true);
                 } else {
                     Log.e(TAG, "writeCharacteristic: 获取特征失败");
                 }
@@ -294,19 +276,11 @@ public class BluetoothLeService extends Service {
         }
     }
 
-    public void readCharacteristic(BluetoothGattCharacteristic characteristic) {
-        if (mBluetoothAdapter == null || mBluetoothGatt == null) {
-            Log.w(TAG, "BluetoothAdapter not initialized");
-            return;
-        }
-        mBluetoothGatt.readCharacteristic(characteristic);
-    }
-
     // 开启关闭通知
     public void setCharacteristicNotification(
             BluetoothGattCharacteristic characteristic, boolean enabled) {
         if (mBluetoothAdapter == null || mBluetoothGatt == null) {
-            Log.w(TAG, "BluetoothAdapter not initialized");
+            Log.w(TAG, "蓝牙适配器未初始化");
             return;
         }
         mBluetoothGatt.setCharacteristicNotification(characteristic, enabled);
@@ -319,7 +293,7 @@ public class BluetoothLeService extends Service {
 
     public void setTXCharacteristicNotification(BluetoothGatt gatt, boolean enabled) {
         if (mBluetoothAdapter == null || mBluetoothGatt == null) {
-            Log.w(TAG, "BluetoothAdapter not initialized");
+            Log.w(TAG, "蓝牙适配器未初始化");
             return;
         }
 
@@ -336,19 +310,5 @@ public class BluetoothLeService extends Service {
                         UUID.fromString(GattAttributes.CLIENT_CHARACTERISTIC_CONFIG));
         descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
         mBluetoothGatt.writeDescriptor(descriptor);
-    }
-
-    public List<BluetoothGattService> getSupportedGattServices() {
-        if (mBluetoothGatt == null) return null;
-
-        return mBluetoothGatt.getServices();
-    }
-
-    // 通过uuid获取服务
-    public BluetoothGattService getSupportGattService(String serviceUuid) {
-        if (mBluetoothGatt == null) return null;
-
-        UUID uuid = UUID.fromString(serviceUuid);
-        return mBluetoothGatt.getService(uuid);
     }
 }

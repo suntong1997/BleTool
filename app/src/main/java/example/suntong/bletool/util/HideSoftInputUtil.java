@@ -1,4 +1,4 @@
-package example.suntong.bletool;
+package example.suntong.bletool.util;
 
 import android.text.InputType;
 import android.widget.EditText;

@@ -5,7 +5,7 @@ import android.util.Log;
 import java.util.ArrayList;
 import java.util.List;
 
-import example.suntong.bletool.Iview;
+import example.suntong.bletool.interfaces.Iview;
 import example.suntong.bletool.service.BluetoothLeService;
 
 public class SportNotification {

@@ -1,4 +1,4 @@
-package example.suntong.bletool.activities;
+package example.suntong.bletool.ui.activitiy;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
@@ -17,35 +17,39 @@ import android.widget.TextView;
 
 import androidx.appcompat.widget.Toolbar;
 
+import java.util.Objects;
+
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import example.suntong.bletool.BluetoothCommand;
 import example.suntong.bletool.DataParser;
 import example.suntong.bletool.FilterHelper;
-import example.suntong.bletool.HideSoftInputUtil;
-import example.suntong.bletool.Iview;
+import example.suntong.bletool.util.HideSoftInputUtil;
+import example.suntong.bletool.interfaces.Iview;
 import example.suntong.bletool.R;
-import example.suntong.bletool.ToastUtil;
+import example.suntong.bletool.util.ToastUtil;
 import example.suntong.bletool.functions.ActivityFunction;
 import example.suntong.bletool.functions.HeartRateControl;
 import example.suntong.bletool.functions.HistoryData;
 import example.suntong.bletool.functions.SportNotification;
 import example.suntong.bletool.functions.SyncDate;
 import example.suntong.bletool.functions.TempControl;
+import example.suntong.bletool.functions.TimeFormat;
+import example.suntong.bletool.functions.VolumnControl;
 import example.suntong.bletool.service.BluetoothLeService;
 
 public class DebugActivity extends BaseActivity implements View.OnClickListener, Iview {
 
     private boolean mConnected = false;
     private final Context mContext = this;
-    final Object obj = new Object();
+    private final Object obj = new Object();
     private final String TAG = DebugActivity.class.getSimpleName();
     private DataParser dataParser;
-    String[][] reciveMultiPkg = new String[10][];
-    int recivePkgNum;
-    boolean isReciveMultPkg = false;
-    int index = 0;
-    int num;
+    private String[][] reciveMultiPkg = new String[10][];
+    private int recivePkgNum;
+    private boolean isReciveMultPkg = false;
+    private int index = 0;
+    private int num;
 
     @BindView(R.id.tool_bar)
     Toolbar toolbar;
@@ -83,6 +87,12 @@ public class DebugActivity extends BaseActivity implements View.OnClickListener,
     Button activityFuncBtn;
     @BindView(R.id.set_number)
     Button setNumberBtn;
+    @BindView(R.id.set_volume)
+    Button setVolumeBtn;
+    @BindView(R.id.mac_adress)
+    Button macAddressBtn;
+    @BindView(R.id.time_format)
+    Button setTimeModeBtn;
 
     // TODO 处理接收到的广播
     private final BroadcastReceiver mGattUpdateReceiver =
@@ -100,34 +110,7 @@ public class DebugActivity extends BaseActivity implements View.OnClickListener,
                         updateConnectionState(R.string.disconnected);
                         invalidateOptionsMenu();
                     } else if (BluetoothLeService.ACTION_DATA_AVAILABLE.equals(action)) {//处理接收到的数据
-                        String data = intent.getStringExtra(BluetoothLeService.EXTRA_DATA);
-                        Log.w(TAG, "onReceive:" + data);
-                        String[] dataList = data.split(" "); // 把传过来的数据字符串拆分成数组
-
-                        // TODO: 2021/8/30 处理接收到的多包数据
-                        if (dataList[0].equals("7F") && dataList[2].equals("00")) {
-                            isReciveMultPkg = true;//设置多包接受中
-                            recivePkgNum = Byte.parseByte(dataList[4], 16) + Byte.parseByte(dataList[5], 16) * 0x100;
-                            reciveMultiPkg[0] = dataList;
-                            index++;
-                        } else if (isReciveMultPkg && index == Byte.parseByte(dataList[2])) {
-                            if (index < recivePkgNum) {
-                                reciveMultiPkg[index] = dataList;
-                                index++;
-                            }
-                        }
-                        //如果最后一包接收完成则进行重置
-                        if (isReciveMultPkg && index == recivePkgNum) {
-                            isReciveMultPkg = false;//将接收多包状态设置为false
-                            dataParser.parseMultiData(reciveMultiPkg, recivePkgNum);
-                            reciveMultiPkg = new String[10][];
-                            recivePkgNum = 0;
-                            index = 0;
-                        }
-                        //如果接收到的数据是单包则调用该方法
-                        if (!dataList[0].equals("7F")) {
-                            dataParser.parseSingleData(dataList);
-                        }
+                        parseReciveData(intent);
                     } else if (BluetoothLeService.CHARACTERISTIC_WRITE_SUCCESS.equals(action)) {
                         synchronized (obj) {
                             obj.notify();
@@ -149,6 +132,8 @@ public class DebugActivity extends BaseActivity implements View.OnClickListener,
         // 注册广播
         registerReceiver(mGattUpdateReceiver, FilterHelper.makeGattUpdateIntentFilter());
         HideSoftInputUtil.hideSoftInputMethod(displayEdit); // 不弹出系统键盘
+        Objects.requireNonNull(getSupportActionBar()).setDisplayHomeAsUpEnabled(true); // 左侧添加一个默认的返回图标
+        getSupportActionBar().setHomeButtonEnabled(true); // 设置返回键可用
 
         initView();
         setOnClickListerner();
@@ -193,6 +178,37 @@ public class DebugActivity extends BaseActivity implements View.OnClickListener,
                 displayEdit.setText("");//清除记录
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    private void parseReciveData(Intent intent) {
+        String data = intent.getStringExtra(BluetoothLeService.EXTRA_DATA);
+        Log.w(TAG, "onReceive:" + data);
+        String[] dataList = data.split(" "); // 把传过来的数据字符串拆分成数组
+
+        // TODO: 2021/8/30 处理接收到的多包数据
+        if (dataList[0].equals("7F") && dataList[2].equals("00")) {
+            isReciveMultPkg = true;//设置多包接收中
+            recivePkgNum = Byte.parseByte(dataList[4], 16) + Byte.parseByte(dataList[5], 16) * 0x100;
+            reciveMultiPkg[0] = dataList;
+            index++;
+        } else if (isReciveMultPkg && index == Byte.parseByte(dataList[2])) {
+            if (index < recivePkgNum) {
+                reciveMultiPkg[index] = dataList;
+                index++;
+            }
+        }
+        //如果最后一包接收完成则进行重置
+        if (isReciveMultPkg && index == recivePkgNum) {
+            isReciveMultPkg = false;//将接收多包状态设置为false
+            dataParser.parseMultiData(reciveMultiPkg, recivePkgNum);
+            reciveMultiPkg = new String[10][];
+            recivePkgNum = 0;
+            index = 0;
+        }
+        //如果接收到的数据是单包则调用该方法
+        if (!dataList[0].equals("7F")) {
+            dataParser.parseSingleData(dataList);
+        }
     }
 
     // 设置连接状态
@@ -257,6 +273,15 @@ public class DebugActivity extends BaseActivity implements View.OnClickListener,
                 Intent intent = new Intent(this, NumberPackerActivity.class);
                 startActivityForResult(intent, 1111);
                 break;
+            case R.id.set_volume:
+                VolumnControl.onVolumnControl(mContext, num, bluetoothLeService, deviceAddress);
+                break;
+            case R.id.mac_adress:
+                writeCharacteristic(deviceAddress, BluetoothCommand.GET_MAC_ADDRESS);
+                break;
+            case R.id.time_format:
+                TimeFormat.onSetTimeFormat(mContext, this, setTimeModeBtn, bluetoothLeService, deviceAddress);
+                break;
         }
     }
 
@@ -276,6 +301,10 @@ public class DebugActivity extends BaseActivity implements View.OnClickListener,
         historyTempBtn.setOnClickListener(this);
         activityFuncBtn.setOnClickListener(this);
         setNumberBtn.setOnClickListener(this);
+        setVolumeBtn.setOnClickListener(this);
+        macAddressBtn.setOnClickListener(this);
+        setTimeModeBtn.setOnClickListener(this);
+        setTimeModeBtn.setOnClickListener(this);
     }
 
     // 展示读取到的数据到编辑框

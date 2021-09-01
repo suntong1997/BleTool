@@ -1,4 +1,4 @@
-package example.suntong.bletool.adapter;
+package example.suntong.bletool.ui.adapter;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -17,7 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import example.suntong.bletool.R;
-import example.suntong.bletool.activities.BleFunctionActivity;
+import example.suntong.bletool.ui.activitiy.BleFunctionActivity;
 import example.suntong.bletool.bean.DeviceItemBean;
 
 

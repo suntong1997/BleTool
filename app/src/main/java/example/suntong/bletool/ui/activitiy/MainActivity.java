@@ -1,4 +1,4 @@
-package example.suntong.bletool.activities;
+package example.suntong.bletool.ui.activitiy;
 
 import android.Manifest;
 import android.app.Activity;
@@ -38,10 +38,10 @@ import java.util.List;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import example.suntong.bletool.FilterHelper;
-import example.suntong.bletool.PermissionUtil;
+import example.suntong.bletool.util.PermissionUtil;
 import example.suntong.bletool.R;
-import example.suntong.bletool.ToastUtil;
-import example.suntong.bletool.adapter.LeDeviceListAdapter;
+import example.suntong.bletool.util.ToastUtil;
+import example.suntong.bletool.ui.adapter.LeDeviceListAdapter;
 import example.suntong.bletool.bean.DeviceItemBean;
 
 public class MainActivity extends AppCompatActivity {

@@ -1,4 +1,4 @@
-package example.suntong.bletool;
+package example.suntong.bletool.util;
 
 import android.content.pm.PackageManager;
 import android.os.Build;
@@ -6,7 +6,7 @@ import android.util.Log;
 
 import androidx.core.content.ContextCompat;
 
-import example.suntong.bletool.activities.MainActivity;
+import example.suntong.bletool.ui.activitiy.MainActivity;
 
 
 public class PermissionUtil {

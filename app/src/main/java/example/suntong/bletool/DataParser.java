@@ -8,6 +8,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import example.suntong.bletool.interfaces.Iview;
+import example.suntong.bletool.util.TimeUtil;
+
 public class DataParser {
     Iview view;
 
@@ -17,7 +20,6 @@ public class DataParser {
 
     //解析收到的单包结果
     public void parseSingleData(String[] dataList) {
-//        String[] dataList = data.split(" "); // 把传过来的数据字符串拆分成数组
 
         if (dataList[0].equals("80") && dataList[1].equals("87")) {
             displaySyncDateResult(dataList);
@@ -31,13 +33,25 @@ public class DataParser {
             displayGsensor(dataList);
         } else if (dataList[0].equals("81") && dataList[1].equals("85")) {
             displayHrControl();
+        } else if (dataList[0].equals("81") && dataList[1].equals("1B") && dataList[2].equals("05")) {
+            displayLiveTempResult();
         } else if (dataList[0].equals("81") && dataList[1].equals("1B")) {
             displayLiveTempData(dataList);
+        } else if (dataList[0].equals("80") && dataList[1].equals("23")) {
+            displayMacAddress(dataList);
+        } else if (dataList[0].equals("80") && dataList[1].equals("0A")) {
+            displaySetVolumnResult();
+        } else if (dataList[0].equals("80") && dataList[1].equals("82")) {
+            displayTimeFormat();
         }
     }
 
-
-    //解析收到的多包结果
+    /**
+     * 解析传回的多包数据
+     *
+     * @param dataList 需要解析的数据
+     * @param length   数据的长度
+     */
     public void parseMultiData(String[][] dataList, int length) {
         List<String> values = new ArrayList<>();
         if (dataList == null || dataList.length == 0) {
@@ -144,17 +158,17 @@ public class DataParser {
     /**
      * 解析收到的步数数据
      *
-     * @param totalData 总数据
-     * @param builder   用来拼接数据
+     * @param values  总数据
+     * @param builder 用来拼接数据
      */
     @SuppressLint("DefaultLocale")
-    private void parseWalkData(List<String> totalData, StringBuilder builder) {
+    private void parseWalkData(List<String> values, StringBuilder builder) {
         int hour = 0, min = 0;
         int stepData;
-        for (int i = 0; i + 1 < totalData.size(); i = i + 2) {
+        for (int i = 0; i + 1 < values.size(); i = i + 2) {
             stepData =
-                    Integer.parseInt(totalData.get(i + 1), 16) * 0x100
-                            + Integer.parseInt(totalData.get(i), 16);
+                    Integer.parseInt(values.get(i + 1), 16) * 0x100
+                            + Integer.parseInt(values.get(i), 16);
             builder.append(String.format("%02d:%02d--%02d   ", hour, min, stepData));
             // 计算每个数值对应的时间
             if ((min + 5) == 60) {
@@ -166,6 +180,7 @@ public class DataParser {
         }
     }
 
+    //展示实时的温度信息
     private void displayLiveTempData(String[] dataList) {
         // 存储收到的每一条回调
         int[] tempValue = new int[6];
@@ -193,17 +208,17 @@ public class DataParser {
     /**
      * 解析收到的心率数据
      *
-     * @param totalData 总数据
-     * @param builder   用来拼接数据
+     * @param values  总数据
+     * @param builder 用来拼接数据
      */
     @SuppressLint("DefaultLocale")
-    private void parseHeartRateData(List<String> totalData, StringBuilder builder) {
+    private void parseHeartRateData(List<String> values, StringBuilder builder) {
         int hour = 0, min = 0, HR, DBP, SBP, RR;
-        for (int i = 0; i + 3 < totalData.size(); i = i + 4) {
-            HR = Integer.parseInt(totalData.get(i), 16);
-            DBP = Integer.parseInt(totalData.get(i + 1), 16);
-            SBP = Integer.parseInt(totalData.get(i + 2), 16);
-            RR = Integer.parseInt(totalData.get(i + 3), 16);
+        for (int i = 0; i + 3 < values.size(); i = i + 4) {
+            HR = Integer.parseInt(values.get(i), 16);
+            DBP = Integer.parseInt(values.get(i + 1), 16);
+            SBP = Integer.parseInt(values.get(i + 2), 16);
+            RR = Integer.parseInt(values.get(i + 3), 16);
 
             builder.append(
                     String.format(
@@ -222,19 +237,19 @@ public class DataParser {
     /**
      * 解析收到的温度数据
      *
-     * @param totalData 总数据
-     * @param builder   用来拼接数据
+     * @param values  总数据
+     * @param builder 用来拼接数据
      */
     @SuppressLint("DefaultLocale")
-    private void parseTempData(@NonNull List<String> totalData, StringBuilder builder) {
+    private void parseTempData(@NonNull List<String> values, StringBuilder builder) {
         int hour = 0, min = 0;
         float tempData;
-        for (int i = 0; i + 1 < totalData.size(); i = i + 2) {
+        for (int i = 0; i + 1 < values.size(); i = i + 2) {
             tempData =
                     (float)
                             (((float)
-                                    (Integer.parseInt(totalData.get(i + 1), 16) * 0x100
-                                            + Integer.parseInt(totalData.get(i), 16)))
+                                    (Integer.parseInt(values.get(i + 1), 16) * 0x100
+                                            + Integer.parseInt(values.get(i), 16)))
                                     / 10.0);
             builder.append(String.format("%02d:%02d--%-2.1f℃   ", hour, min, tempData));
             // 计算每个数值对应的时间
@@ -246,4 +261,23 @@ public class DataParser {
             }
         }
     }
+
+    //设置音量大小的返回结果展示
+    void displaySetVolumnResult() {
+        view.displayData("音量设置完成");
+    }
+
+    //展示设备的物理地址
+    private void displayMacAddress(String[] dataList) {
+        view.displayData("MAC:" + dataList[4] + ":" + dataList[5] + ":" + dataList[6] + ":" + dataList[7] + ":" + dataList[8] + ":" + dataList[9]);
+    }
+
+    private void displayTimeFormat() {
+        view.displayData("时间格式设置成功");
+    }
+
+    private void displayLiveTempResult() {
+        view.displayData("温度控制设置成功");
+    }
+
 }

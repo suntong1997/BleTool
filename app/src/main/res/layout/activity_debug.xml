@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    tools:context=".activities.DebugActivity">
+    tools:context=".ui.activitiy.DebugActivity">
 
     <androidx.appcompat.widget.Toolbar
         android:id="@+id/tool_bar"
@@ -190,7 +190,6 @@
             android:id="@+id/history_hr"
             android:layout_width="0dp"
             android:layout_height="match_parent"
-
             android:layout_weight="1"
             android:text="历史心率"
             android:textSize="12sp" />
@@ -231,12 +230,12 @@
             android:textSize="12sp" />
 
         <Button
-
+            android:id="@+id/set_volume"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-
-            android:textSize="11sp" />
+            android:text="音量调节"
+            android:textSize="12sp" />
     </LinearLayout>
 
 
@@ -248,10 +247,21 @@
 
 
         <Button
+            android:id="@+id/mac_adress"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_marginEnd="5dp"
             android:layout_weight="1"
+            android:text="物理地址"
+            android:textSize="12sp" />
+
+        <Button
+            android:id="@+id/time_format"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_marginEnd="5dp"
+            android:layout_weight="1"
+            android:text="时间格式"
             android:textSize="12sp" />
 
         <Button
@@ -260,16 +270,6 @@
             android:layout_height="match_parent"
             android:layout_marginEnd="5dp"
             android:layout_weight="1"
-
-            android:textSize="12sp" />
-
-        <Button
-
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_marginEnd="5dp"
-            android:layout_weight="1"
-
             android:textSize="12sp" />
 
         <Button

@@ -1,4 +1,4 @@
-package example.suntong.bletool.activities;
+package example.suntong.bletool.ui.activitiy;
 
 import android.app.Activity;
 import android.content.Context;
@@ -11,7 +11,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import example.suntong.bletool.R;
-import example.suntong.bletool.ToastUtil;
+import example.suntong.bletool.util.ToastUtil;
 
 
 public class NumberPackerActivity extends AppCompatActivity {
