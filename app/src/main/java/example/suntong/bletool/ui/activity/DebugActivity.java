@@ -1,4 +1,4 @@
-package example.suntong.bletool.ui.activitiy;
+package example.suntong.bletool.ui.activity;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;

@@ -1,4 +1,4 @@
-package example.suntong.bletool.ui.activitiy;
+package example.suntong.bletool.ui.activity;
 
 import android.content.Intent;
 import android.os.Bundle;

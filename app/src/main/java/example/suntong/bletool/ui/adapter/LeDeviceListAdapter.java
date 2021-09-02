@@ -17,7 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import example.suntong.bletool.R;
-import example.suntong.bletool.ui.activitiy.BleFunctionActivity;
+import example.suntong.bletool.ui.activity.BleFunctionActivity;
 import example.suntong.bletool.bean.DeviceItemBean;
 
 

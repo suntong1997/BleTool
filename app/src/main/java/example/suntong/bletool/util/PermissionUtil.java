@@ -6,7 +6,7 @@ import android.util.Log;
 
 import androidx.core.content.ContextCompat;
 
-import example.suntong.bletool.ui.activitiy.MainActivity;
+import example.suntong.bletool.ui.activity.MainActivity;
 
 
 public class PermissionUtil {

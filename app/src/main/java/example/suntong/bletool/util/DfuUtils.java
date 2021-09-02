@@ -8,6 +8,7 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
 
+import example.suntong.bletool.R;
 import example.suntong.bletool.service.DfuService;
 import no.nordicsemi.android.dfu.DfuProgressListener;
 import no.nordicsemi.android.dfu.DfuServiceController;
@@ -38,7 +39,7 @@ public class DfuUtils {
     //开始升级
     public void startUpdate(Context mContext, String deviceMac, String deviceName, String mDeviceZipFilePath) {
         if (mDeviceZipFilePath == null) {
-            ToastUtil.showShort(mContext,"找不到路径");
+            ToastUtil.showShort(mContext,mContext.getString(R.string.cannot_find_path));
             return;
         }
         //闪退问题解决 兼容   启动前台通知的问题，因为这个库在升级的时候会在通知栏显示进度，
@@ -49,9 +50,8 @@ public class DfuUtils {
         starter = new DfuServiceInitiator(deviceMac)
                 .setDeviceName(deviceName)//设备名称
                 .setKeepBond(false)//保持设备绑定 官方demo为false
-                .setForceDfu(false)
                 .setPacketsReceiptNotificationsEnabled(false)
-                .setPacketsReceiptNotificationsValue(12)
+                .setPacketsReceiptNotificationsValue(10)
                 .setUnsafeExperimentalButtonlessServiceInSecureDfuEnabled(true);//官方ndemo为true
         // If you want to have experimental buttonless DFU feature supported call additionally:
         starter.setZip(mDeviceZipFilePath);
@@ -60,7 +60,7 @@ public class DfuUtils {
 
     public void startUpdate(Context mContext, String deviceMac, String deviceName, Uri mDeviceZipFileUri) {
         if (mDeviceZipFileUri == null) {
-            ToastUtil.showShort(mContext,"找不到uri");
+            ToastUtil.showShort(mContext,mContext.getString(R.string.cannot_find_uri));
             return;
         }
         //闪退问题解决 兼容   启动前台通知的问题，因为这个库在升级的时候会在通知栏显示进度，
@@ -70,13 +70,34 @@ public class DfuUtils {
 
         starter = new DfuServiceInitiator(deviceMac)
                 .setDeviceName(deviceName)//设备名称
-                .setKeepBond(false)//保持设备绑定 官方demo为false
+                .setKeepBond(true)//保持设备绑定 官方demo为false
                 .setForceDfu(false)
                 .setPacketsReceiptNotificationsEnabled(false)
                 .setPacketsReceiptNotificationsValue(12)
                 .setUnsafeExperimentalButtonlessServiceInSecureDfuEnabled(true);//官方ndemo为true
         // If you want to have experimental buttonless DFU feature supported call additionally:
         starter.setZip(mDeviceZipFileUri);
+        serviceController = starter.start(mContext, DfuService.class); //启动升级服务
+    }
+
+    public void startUpdate(Context mContext, String deviceMac, String deviceName, Uri mDeviceZipFileUri,String mDeviceZipFilePath) {
+        if (mDeviceZipFileUri == null) {
+            ToastUtil.showShort(mContext,mContext.getString(R.string.cannot_find_uri));
+            return;
+        }
+        //闪退问题解决 兼容   启动前台通知的问题，因为这个库在升级的时候会在通知栏显示进度，
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            DfuServiceInitiator.createDfuNotificationChannel(mContext);
+        }
+
+        starter = new DfuServiceInitiator(deviceMac)
+                .setDeviceName(deviceName)//设备名称
+                .setKeepBond(true)//保持设备绑定 官方demo为false
+                .setPacketsReceiptNotificationsEnabled(false)
+                .setPacketsReceiptNotificationsValue(10)
+                .setUnsafeExperimentalButtonlessServiceInSecureDfuEnabled(true);//官方ndemo为true
+        // If you want to have experimental buttonless DFU feature supported call additionally:
+        starter.setZip(mDeviceZipFileUri,mDeviceZipFilePath);
         serviceController = starter.start(mContext, DfuService.class); //启动升级服务
     }
 

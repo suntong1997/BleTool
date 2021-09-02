@@ -6,6 +6,7 @@
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.MOUNT_UNMOUNT_FILESYSTEMS" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" /> <!-- 往SDCard写入数据权限 -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
@@ -22,25 +23,25 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.BleTool">
         <activity
-            android:name=".ui.activitiy.DebugActivity"
+            android:name=".ui.activity.DebugActivity"
             android:exported="true" />
         <activity
-            android:name=".ui.activitiy.DeviceUpdateActivity"
+            android:name=".ui.activity.DeviceUpdateActivity"
             android:exported="true"
             android:screenOrientation="portrait" />
         <activity
-            android:name=".ui.activitiy.BaseActivity"
+            android:name=".ui.activity.BaseActivity"
             android:exported="true" />
         <activity
-            android:name=".ui.activitiy.BleFunctionActivity"
+            android:name=".ui.activity.BleFunctionActivity"
             android:exported="true"
             android:screenOrientation="portrait" />
         <activity
-            android:name=".ui.activitiy.NumberPackerActivity"
+            android:name=".ui.activity.NumberPackerActivity"
             android:exported="true"
             android:screenOrientation="portrait" />
         <activity
-            android:name=".ui.activitiy.MainActivity"
+            android:name=".ui.activity.MainActivity"
             android:exported="true"
             android:screenOrientation="portrait">
             <intent-filter>
@@ -49,7 +50,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".ui.activitiy.NotificationActivity" />
+        <activity android:name=".ui.activity.NotificationActivity" />
 
         <service  android:name=".service.DfuService"
             android:exported="true">

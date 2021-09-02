@@ -1,4 +1,4 @@
-package example.suntong.bletool.ui.activitiy;
+package example.suntong.bletool.ui.activity;
 
 import android.content.ComponentName;
 import android.content.Intent;
@@ -45,8 +45,6 @@ public class BaseActivity extends AppCompatActivity {
         deviceAddress = getIntent().getStringExtra("device_address");
         deviceName = getIntent().getStringExtra("device_name");
 
-        Intent gattServiceIntent = new Intent(this, BluetoothLeService.class);
-        bindService(gattServiceIntent, mServiceConnection, BIND_AUTO_CREATE);
     }
 
 
@@ -56,6 +54,17 @@ public class BaseActivity extends AppCompatActivity {
         // 蓝牙连接
         if (bluetoothLeService != null)
             Log.e(TAG, "onCreate: " + bluetoothLeService.connect(deviceAddress));
+
+        Intent gattServiceIntent = new Intent(this, BluetoothLeService.class);
+        bindService(gattServiceIntent, mServiceConnection, BIND_AUTO_CREATE);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        Intent intent = new Intent(this, BluetoothLeService.class);
+        unbindService(mServiceConnection);
+        stopService(intent);
     }
 
     @Override

@@ -1,4 +1,4 @@
-package example.suntong.bletool.ui.activitiy;
+package example.suntong.bletool.ui.activity;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
@@ -13,6 +13,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.PopupMenu;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -39,12 +40,13 @@ public class DeviceUpdateActivity extends BaseActivity implements View.OnClickLi
     Context mContext = this;
     private boolean mConnected = false;
     private static final int READ_REQUEST_CODE = 42;
-    private Byte[] mFlieData;
+    private Byte[] mFileData;
     private final Object obj = new Object();
     private volatile boolean mWriteSuccess = true;
-    Uri uri;//升级文件的uri
+    Uri fileUri;//升级文件的uri
     String filePath;
     UpdateMode updateMode;//升级模式
+    volatile int i = 0;
 
     @BindView(R.id.connect_state)
     TextView connectionState;
@@ -58,6 +60,12 @@ public class DeviceUpdateActivity extends BaseActivity implements View.OnClickLi
     Button chooseModeBtn;
     @BindView(R.id.update_btn)
     Button updateBtn;
+    @BindView(R.id.update_process)
+    LinearLayout updateProcessLyt;
+    @BindView(R.id.update_process_precent)
+    TextView updateProcessPrecentTxt;
+    @BindView(R.id.update_process_total)
+    TextView updatePrecossTotalTxt;
     @BindView(R.id.update_progress)
     ProgressBar updateProgress;
 
@@ -70,7 +78,7 @@ public class DeviceUpdateActivity extends BaseActivity implements View.OnClickLi
                     if (BluetoothLeService.ACTION_GATT_CONNECTED.equals(action)) { // 处理连接广播
                         mConnected = true;
                         //如果文件鹤选择模式不为空且大小不为0则设置按钮可点击
-                        if (mFlieData != null && mFlieData.length > 0 && updateMode != null) {
+                        if (fileUri != null && updateMode != null) {
                             setUpdateBtnEnabled(true);
                         }
                         updateConnectionState(R.string.connected);
@@ -93,66 +101,86 @@ public class DeviceUpdateActivity extends BaseActivity implements View.OnClickLi
             };
 
     private final DfuProgressListener dfuProgressListener = new DfuProgressListener() {
+        final String TAG = DfuProgressListener.class.getSimpleName();
+
         @Override
         public void onDeviceConnecting(@NonNull String deviceAddress) {
-
+            displayLog(getString(R.string.connecting_device));
+            Log.w(TAG, "onDeviceConnecting: ");
         }
 
         @Override
         public void onDeviceConnected(@NonNull String deviceAddress) {
-
+            displayLog(getString(R.string.connected_device));
+            setUpdateProgress(false);
+            Log.w(TAG, "onDeviceConnected: ");
         }
 
         @Override
         public void onDfuProcessStarting(@NonNull String deviceAddress) {
-
+            Log.w(TAG, "onDfuProcessStarting: ");
         }
 
         @Override
         public void onDfuProcessStarted(@NonNull String deviceAddress) {
-
+            displayLog(getString(R.string.start_update));
+            setUpdateProgress(true);
+            Log.w(TAG, "onDfuProcessStarted: ");
         }
 
         @Override
         public void onEnablingDfuMode(@NonNull String deviceAddress) {
+            Log.w(TAG, "onEnablingDfuMode: ");
 
         }
 
         @Override
         public void onProgressChanged(@NonNull String deviceAddress, int percent, float speed, float avgSpeed, int currentPart, int partsTotal) {
-
+            setUpdateProgressProcess(percent);
+            Log.w(TAG, "onProgressChanged: ");
         }
 
         @Override
         public void onFirmwareValidating(@NonNull String deviceAddress) {
-
+            displayLog(getString(R.string.firmware_vaildating));
+            Log.w(TAG, "onFirmwareValidating: ");
         }
 
         @Override
         public void onDeviceDisconnecting(String deviceAddress) {
-
+            displayLog(getString(R.string.disconnecting_device));
+            Log.w(TAG, "onDeviceDisconnecting: ");
         }
 
         @Override
         public void onDeviceDisconnected(@NonNull String deviceAddress) {
-
+            displayLog(getString(R.string.dusconnected_device));
+            setUpdateProgress(false);
+            Log.w(TAG, "onDeviceDisconnected: ");
         }
 
         @Override
         public void onDfuCompleted(@NonNull String deviceAddress) {
-
+            displayLog(getString(R.string.update_completed));
+            setUpdateProgress(false);
+            Log.w(TAG, "onDfuCompleted: ");
         }
 
         @Override
         public void onDfuAborted(@NonNull String deviceAddress) {
-
+            displayLog(getString(R.string.update_aborted));
+            setUpdateProgress(false);
+            Log.w(TAG, "onDfuAborted: ");
         }
 
         @Override
         public void onError(@NonNull String deviceAddress, int error, int errorType, String message) {
-
+            displayLog(getString(R.string.update_error));
+            setUpdateProgress(false);
+            Log.w(TAG, "onError: ");
         }
     };
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -173,13 +201,19 @@ public class DeviceUpdateActivity extends BaseActivity implements View.OnClickLi
     @Override
     protected void onResume() {
         super.onResume();
-        DfuServiceListenerHelper.registerProgressListener(this, dfuProgressListener);
+        DfuServiceListenerHelper.registerProgressListener(this, dfuProgressListener); //监听升级进度
     }
 
     @Override
-    protected void onPause() {
-        super.onPause();
-        DfuServiceListenerHelper.unregisterProgressListener(this, dfuProgressListener);
+    protected void onStop() {
+        super.onStop();
+        i = 0;
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        DfuUtils.getInstance().dispose(mContext, dfuProgressListener);
     }
 
     @Override
@@ -188,25 +222,30 @@ public class DeviceUpdateActivity extends BaseActivity implements View.OnClickLi
         if (requestCode == READ_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
 
             if (resultData != null) {
-                uri = resultData.getData();//获取文件的uri去读取文件
-                displayLog("文件路径:" + uri.getPath());
-                if (uri == null) throw new AssertionError();
-                filePath=uri.getPath();
+                fileUri = resultData.getData();//获取文件的uri去读取文件
+                displayLog(getString(R.string.file_path) + ":" + fileUri.getPath());
+                if (fileUri == null) throw new AssertionError();
+                filePath = fileUri.getPath();
 
                 //如果是Dfu模式不需要直接读取数据
                 if (updateMode != UpdateMode.DFU_UPDATE) new Thread(() -> {
                     try {
-                        mFlieData = FilterHelper.readDataFromUri(mContext, uri);
-                        float size = mFlieData.length / 1024.0f;
+                        mFileData = FilterHelper.readDataFromUri(mContext, fileUri);
+                        float size = mFileData.length / 1024.0f;
                         displayLog(getString(R.string.complete_read) + ":" + size + " KB");
 
-                        if (mConnected && mFlieData.length > 0 && updateMode != null) {
+                        if (mConnected && mFileData.length > 0 && updateMode != null) {
                             setUpdateBtnEnabled(true);
                         }
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
                 }).start();
+                else {
+                    if (mConnected) {
+                        setUpdateBtnEnabled(true);
+                    }
+                }
             }
         }
     }
@@ -224,14 +263,12 @@ public class DeviceUpdateActivity extends BaseActivity implements View.OnClickLi
         return true;
     }
 
-    @SuppressLint("NonConstantResourceId")
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-
         switch (item.getItemId()) {
             case R.id.menu_file_explorer:
                 if (updateMode == null) {
-                    ToastUtil.showShort(mContext, "请选择更新模式后再选择文件");
+                    ToastUtil.showShort(mContext, getString(R.string.choose_file_after_mode));
                     break;
                 }
                 openFileExplorer();
@@ -264,45 +301,55 @@ public class DeviceUpdateActivity extends BaseActivity implements View.OnClickLi
                 item -> {
                     switch (item.getItemId()) {
                         case R.id.menu_update_ui:
-                            displayLog("界面升级");
+                            displayLog(getString(R.string.ui_update));
                             updateMode = UpdateMode.UI_UPDATE;
-                            if (mConnected && mFlieData != null && mFlieData.length > 0) {
+                            if (mConnected && mFileData != null && mFileData.length > 0) {
                                 setUpdateBtnEnabled(true);
+                            } else {
+                                setUpdateBtnEnabled(false);
                             }
-//                            parseMultiPkg(0);
                             break;
                         case R.id.menu_update_font:
-                            displayLog("字库升级");
+                            displayLog(getString(R.string.font_update));
                             updateMode = UpdateMode.FONT_UPDATE;
-                            if (mConnected && mFlieData != null && mFlieData.length > 0) {
+                            if (mConnected && mFileData != null && mFileData.length > 0) {
                                 setUpdateBtnEnabled(true);
+                            } else {
+                                setUpdateBtnEnabled(false);
                             }
-//                            parseMultiPkg(1);
                             break;
                         case R.id.menu_update_ota:
-//                            parseMultiPkg(2);
-                            displayLog("固件升级");
+                            displayLog(getString(R.string.ota_update));
                             updateMode = UpdateMode.OTA_UPDATE;
-                            if (mConnected && mFlieData != null && mFlieData.length > 0) {
+                            if (mConnected && mFileData != null && mFileData.length > 0) {
                                 setUpdateBtnEnabled(true);
+                            } else {
+                                setUpdateBtnEnabled(false);
                             }
                             break;
                         case R.id.menu_update_face:
-//                            parseFaceCMD(new byte[]{0x01, 0x00}, (byte) 0x02, (byte) 0x8E);
-                            displayLog("表盘升级");
+                            displayLog(getString(R.string.face_update));
                             updateMode = UpdateMode.FACE_UPDATE;
-                            if (mConnected && mFlieData != null && mFlieData.length > 0) {
+                            if (mConnected && mFileData != null && mFileData.length > 0) {
                                 setUpdateBtnEnabled(true);
+                            } else {
+                                setUpdateBtnEnabled(false);
                             }
                             break;
                         case R.id.menu_update_dfu:
-                            displayLog("DFU升级");
+                            displayLog(getString(R.string.dfu_update));
                             updateMode = UpdateMode.DFU_UPDATE;
-                            if (mConnected && mFlieData != null && mFlieData.length > 0) {
+                            if (mConnected && fileUri != null) {
                                 setUpdateBtnEnabled(true);
+                            } else {
+                                setUpdateBtnEnabled(false);
                             }
                             break;
                     }
+                    //选择模式后重置状态
+                    fileUri = null;
+                    filePath = null;
+                    mFileData = null;
                     return true;
                 });
     }
@@ -311,10 +358,9 @@ public class DeviceUpdateActivity extends BaseActivity implements View.OnClickLi
     void parseMultiPkg(int fileType) {
         new Thread(
                 () -> {
-                    int i;
                     synchronized (obj) {
 
-                        long length = mFlieData.length + 5; // 数据部分长度,需要加上文件类型和文件的数据长度
+                        long length = mFileData.length + 5; // 数据部分长度,需要加上文件类型和文件的数据长度
                         int PKG_NUM; // 包数
                         PKG_NUM =
                                 ((length + 8) % 0xB2) == 0
@@ -322,6 +368,8 @@ public class DeviceUpdateActivity extends BaseActivity implements View.OnClickLi
                                         : (int) ((length + 8) / 0xB2) + 1;
 
                         updateProgress.setMax(PKG_NUM);
+                        runOnUiThread(() -> updatePrecossTotalTxt.setText(String.valueOf(PKG_NUM - 1)));
+
 
                         // 包数的高低位
                         byte lowPkgNum = (byte) (PKG_NUM & 0xFF);
@@ -350,7 +398,7 @@ public class DeviceUpdateActivity extends BaseActivity implements View.OnClickLi
                         long CRC = CMD_CLASS + CMD_ID + lowCmdLength + highCmdLength + fileType;
 
                         for (i = 0; i < 0xA5; i++) {
-                            CRC += mFlieData[i];
+                            CRC += mFileData[i];
                         }
 
                         // 检验码的高低位
@@ -400,7 +448,7 @@ public class DeviceUpdateActivity extends BaseActivity implements View.OnClickLi
 
                                 for (int j = 17; j < 182; j++) {
                                     if (index < length) {//防止数组越界
-                                        pkg[j] = mFlieData[index];
+                                        pkg[j] = mFileData[index];
                                     }
                                     index++;
                                 }
@@ -417,14 +465,14 @@ public class DeviceUpdateActivity extends BaseActivity implements View.OnClickLi
                                 pkg[3] = numPkgHigh;
                                 for (int j = 4; j < size; j++) {
                                     if (index < length) {//防止数组越界
-                                        pkg[j] = mFlieData[index];
+                                        pkg[j] = mFileData[index];
                                     }
                                     index++;
                                 }
                             } else {
                                 for (int j = 4; j < 182; j++) {
                                     if (index < length) {//防止数组越界
-                                        pkg[j] = mFlieData[index];
+                                        pkg[j] = mFileData[index];
                                     }
                                     index++;
                                 }
@@ -433,8 +481,7 @@ public class DeviceUpdateActivity extends BaseActivity implements View.OnClickLi
                             Log.w(TAG, "sendMultiPkgCmd:i= " + i);
 
                             // 传入发送进度
-                            int finalI = i;
-                            runOnUiThread(() -> updateProgress.setProgress(finalI));
+                            setUpdateProgressProcess(i);
 
 //                            final StringBuilder stringBuilder = new StringBuilder(pkg.length);
 //                            for (byte byteChar : pkg)
@@ -451,10 +498,9 @@ public class DeviceUpdateActivity extends BaseActivity implements View.OnClickLi
 
                             //判断收到的回调是否写入成功，若失败则停止发送
                             if (!mWriteSuccess) {
-                                displayLog("发送失败 (" + i + "/" + PKG_NUM + ")");
+                                displayLog(getString(R.string.send_failed) + "(" + i + "/" + PKG_NUM + ")");
                                 runOnUiThread(
                                         () -> setUpdateProgress(false));
-                                Thread.interrupted();
                                 break;
                             }
                         }// TODO: 2021/8/29 发送结束
@@ -463,7 +509,7 @@ public class DeviceUpdateActivity extends BaseActivity implements View.OnClickLi
 
                         //判断是否更新完成
                         if (mWriteSuccess) {
-                            displayLog("发送完成");
+                            displayLog(getString(R.string.send_completed));
                         }
                     }
                 })
@@ -473,10 +519,9 @@ public class DeviceUpdateActivity extends BaseActivity implements View.OnClickLi
     private void parseFaceCMD(byte[] faceId, byte CMD_CLASS, byte CMD_ID) {
         new Thread(
                 () -> {
-                    int i;
                     synchronized (obj) {
 
-                        long length = mFlieData.length + 6; // 数据部分长度,需要加上文件类型和文件的数据长度
+                        long length = mFileData.length + 6; // 数据部分长度,需要加上文件类型和文件的数据长度
 
                         int PKG_NUM; // 包数
                         PKG_NUM =
@@ -485,6 +530,7 @@ public class DeviceUpdateActivity extends BaseActivity implements View.OnClickLi
                                         : (int) ((length + 8) / 0xB2) + 1;
 
                         updateProgress.setMax(PKG_NUM);
+                        runOnUiThread(() -> updatePrecossTotalTxt.setText(String.valueOf(PKG_NUM - 1)));
 
                         // 包数的高低位
                         byte lowPkgNum = (byte) (PKG_NUM & 0xFF);
@@ -511,13 +557,13 @@ public class DeviceUpdateActivity extends BaseActivity implements View.OnClickLi
                                 CMD_CLASS + CMD_ID + lowCmdLength + highCmdLength + faceId[0] + faceId[1];
 
                         // 一个包的数据长度为182，减去第一个包前面的固定字节则数据部分最大为165
-                        if (mFlieData.length < 0xA5) {
-                            for (byte mReadBinDatum : mFlieData) {
+                        if (mFileData.length < 0xA5) {
+                            for (byte mReadBinDatum : mFileData) {
                                 CRC += mReadBinDatum;
                             }
                         } else {
                             for (i = 0; i < 0xA5; i++) {
-                                CRC += mFlieData[i];
+                                CRC += mFileData[i];
                             }
                         }
 
@@ -534,7 +580,7 @@ public class DeviceUpdateActivity extends BaseActivity implements View.OnClickLi
 
                             if (!mConnected) {
                                 mWriteSuccess = true;
-                                displayLog("连接已断开，发送失败");
+                                displayLog(getString(R.string.disconnected_send_failed));
                                 setUpdateProgress(false);
                                 break;
                             }
@@ -567,7 +613,7 @@ public class DeviceUpdateActivity extends BaseActivity implements View.OnClickLi
 
                                 for (int j = 18; j < 182; j++) {
                                     if (index < length) {
-                                        pkg[j] = mFlieData[index];
+                                        pkg[j] = mFileData[index];
                                     }
                                     index++;
                                 }
@@ -583,14 +629,14 @@ public class DeviceUpdateActivity extends BaseActivity implements View.OnClickLi
                                 pkg[3] = numPkgHigh;
                                 for (int j = 4; j < size; j++) {
                                     if (index < length) {
-                                        pkg[j] = mFlieData[index];
+                                        pkg[j] = mFileData[index];
                                     }
                                     index++;
                                 }
                             } else {
                                 for (int j = 4; j < 182; j++) {
                                     if (index < length) {
-                                        pkg[j] = mFlieData[index];
+                                        pkg[j] = mFileData[index];
                                     }
                                     index++;
                                 }
@@ -599,8 +645,7 @@ public class DeviceUpdateActivity extends BaseActivity implements View.OnClickLi
                             Log.w(TAG, "sendMultiPkgCmd:i= " + i);
 
                             // 传入发送进度
-                            int finalI = i;
-                            runOnUiThread(() -> updateProgress.setProgress(finalI));
+                            setUpdateProgressProcess(i);
 
 //                            final StringBuilder stringBuilder = new StringBuilder(pkg.length);
 //                            for (byte byteChar : pkg)
@@ -625,7 +670,7 @@ public class DeviceUpdateActivity extends BaseActivity implements View.OnClickLi
                         }
                         setUpdateProgress(false);
                         if (mWriteSuccess) {
-                            displayLog("发送完成");
+                            displayLog(getString(R.string.send_completed));
                         }
                         mWriteSuccess = true;
                     }
@@ -657,6 +702,11 @@ public class DeviceUpdateActivity extends BaseActivity implements View.OnClickLi
 
     @Override
     public void onClick(View v) {
+        if (!mConnected) {
+            displayLog(getString(R.string.disconnected_device));
+            return;
+        }
+
         switch (v.getId()) {
             case R.id.mode_choose_btn:
                 chooseUpdateMode();
@@ -686,12 +736,11 @@ public class DeviceUpdateActivity extends BaseActivity implements View.OnClickLi
                         parseFaceCMD(new byte[]{0x01, 0x00}, (byte) 0x02, (byte) 0x8E);
                         break;
                     case DFU_UPDATE:
-                        ToastUtil.showShort(mContext, "DFU升级");
+                        DfuUtils.getInstance().startUpdate(mContext, deviceAddress, deviceName, fileUri, filePath);
                         break;
                     default:
-                        ToastUtil.showShort(mContext, "找不到需要升级的模式");
+                        ToastUtil.showShort(mContext, getString(R.string.cannot_find_mode));
                 }
-
                 break;
             default:
                 throw new IllegalStateException("Unexpected value: " + v.getId());
@@ -717,13 +766,22 @@ public class DeviceUpdateActivity extends BaseActivity implements View.OnClickLi
         runOnUiThread(() -> connectionState.setText(resourceId));
     }
 
+    private void setUpdateProgressProcess(int percent) {
+        runOnUiThread(() -> {
+            updateProgress.setProgress(percent);
+            updateProcessPrecentTxt.setText(String.valueOf(percent));
+        });
+    }
+
 
     //设置进度条的展示和隐藏
     void setUpdateProgress(boolean enable) {
         runOnUiThread(() -> {
             if (enable) {
+                updateProcessLyt.setVisibility(View.VISIBLE);
                 updateProgress.setVisibility(View.VISIBLE);
             } else {
+                updateProcessLyt.setVisibility(View.GONE);
                 updateProgress.setVisibility(View.GONE);
             }
         });

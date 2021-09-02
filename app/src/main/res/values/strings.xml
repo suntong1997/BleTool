@@ -41,14 +41,7 @@
     <string name="hr_control">心率控制</string>
     <string name="history_step">历史步数</string>
     <string name="title_activity_ble_funtion">BleFuntionActivity</string>
-    <!-- Strings used for fragments for navigation -->
-    <string name="first_fragment_label">First Fragment</string>
-    <string name="second_fragment_label">Second Fragment</string>
-    <string name="next">Next</string>
-    <string name="previous">Previous</string>
 
-    <string name="hello_first_fragment">Hello first fragment</string>
-    <string name="hello_second_fragment">Hello second fragment. Arg: %1$s</string>
     <string name="device_update">设备升级</string>
     <string name="function_test">功能测试</string>
     <string name="unconnected_device">未连接设备</string>
@@ -57,4 +50,28 @@
     <string name="complete_read">读取完成</string>
     <string name="failed_update">更新失败</string>
     <string name="failed_write">写入失败</string>
+    <string name="update_mode">升级模式</string>
+    <string name="start_update">开始升级</string>
+    <string name="connecting_device">设备连接中</string>
+    <string name="connected_device">设备已连接</string>
+    <string name="firmware_vaildating">固件验证中</string>
+    <string name="disconnecting_device">设备断开中</string>
+    <string name="dusconnected_device">设备已断开</string>
+    <string name="update_completed">更新完成</string>
+    <string name="update_aborted">更新终止</string>
+    <string name="update_error">更新错误</string>
+    <string name="file_path">文件路径</string>
+    <string name="choose_file_after_mode">请选择更新模式后再选择文件</string>
+    <string name="ui_update">界面升级</string>
+    <string name="font_update">字库升级</string>
+    <string name="ota_update">固件升级</string>
+    <string name="face_update">表盘升级</string>
+    <string name="dfu_update">DFU升级</string>
+    <string name="send_failed">"发送失败 "</string>
+    <string name="send_completed">发送完成</string>
+    <string name="disconnected_send_failed">连接已断开，发送失败</string>
+    <string name="disconnected_device">设备已断开</string>
+    <string name="cannot_find_mode">找不到需要升级的模式</string>
+    <string name="cannot_find_uri">找不到uri</string>
+    <string name="cannot_find_path">找不到路径</string>
 </resources>

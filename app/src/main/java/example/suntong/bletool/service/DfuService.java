@@ -2,7 +2,7 @@ package example.suntong.bletool.service;
 
 import android.app.Activity;
 
-import example.suntong.bletool.ui.activitiy.NotificationActivity;
+import example.suntong.bletool.ui.activity.NotificationActivity;
 import no.nordicsemi.android.dfu.DfuBaseService;
 
 public class DfuService extends DfuBaseService {
