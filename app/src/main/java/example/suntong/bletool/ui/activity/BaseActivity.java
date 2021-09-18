@@ -44,7 +44,6 @@ public class BaseActivity extends AppCompatActivity {
 
         deviceAddress = getIntent().getStringExtra("device_address");
         deviceName = getIntent().getStringExtra("device_name");
-
     }
 
 
@@ -57,14 +56,6 @@ public class BaseActivity extends AppCompatActivity {
 
         Intent gattServiceIntent = new Intent(this, BluetoothLeService.class);
         bindService(gattServiceIntent, mServiceConnection, BIND_AUTO_CREATE);
-    }
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-        Intent intent = new Intent(this, BluetoothLeService.class);
-        unbindService(mServiceConnection);
-        stopService(intent);
     }
 
     @Override

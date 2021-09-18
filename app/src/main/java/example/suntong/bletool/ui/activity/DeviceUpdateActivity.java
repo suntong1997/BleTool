@@ -1,10 +1,10 @@
 package example.suntong.bletool.ui.activity;
 
-import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.TextUtils;
@@ -18,7 +18,6 @@ import android.widget.PopupMenu;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.widget.Toolbar;
 
 import java.io.IOException;
@@ -30,23 +29,20 @@ import example.suntong.bletool.FilterHelper;
 import example.suntong.bletool.R;
 import example.suntong.bletool.UpdateMode;
 import example.suntong.bletool.service.BluetoothLeService;
-import example.suntong.bletool.util.DfuUtils;
 import example.suntong.bletool.util.ToastUtil;
-import no.nordicsemi.android.dfu.DfuProgressListener;
-import no.nordicsemi.android.dfu.DfuServiceListenerHelper;
 
 public class DeviceUpdateActivity extends BaseActivity implements View.OnClickListener {
     private static final String TAG = DeviceUpdateActivity.class.getSimpleName();
     Context mContext = this;
-    private boolean mConnected = false;
+    private volatile boolean mConnected = false;
     private static final int READ_REQUEST_CODE = 42;
     private Byte[] mFileData;
     private final Object obj = new Object();
-    private volatile boolean mWriteSuccess = true;
+    private volatile boolean mWriteSuccess = true;//判断是否写入成功
     Uri fileUri;//升级文件的uri
     String filePath;
     UpdateMode updateMode;//升级模式
-    volatile int i = 0;
+    volatile int i = 0;//记录进度
 
     @BindView(R.id.connect_state)
     TextView connectionState;
@@ -60,12 +56,10 @@ public class DeviceUpdateActivity extends BaseActivity implements View.OnClickLi
     Button chooseModeBtn;
     @BindView(R.id.update_btn)
     Button updateBtn;
-    @BindView(R.id.update_process)
+    @BindView(R.id.update_process_LinearLayout)
     LinearLayout updateProcessLyt;
-    @BindView(R.id.update_process_precent)
-    TextView updateProcessPrecentTxt;
-    @BindView(R.id.update_process_total)
-    TextView updatePrecossTotalTxt;
+    @BindView(R.id.update_process_percent)
+    TextView updateProcessPercentTxt;
     @BindView(R.id.update_progress)
     ProgressBar updateProgress;
 
@@ -77,7 +71,7 @@ public class DeviceUpdateActivity extends BaseActivity implements View.OnClickLi
                     final String action = intent.getAction();
                     if (BluetoothLeService.ACTION_GATT_CONNECTED.equals(action)) { // 处理连接广播
                         mConnected = true;
-                        //如果文件鹤选择模式不为空且大小不为0则设置按钮可点击
+                        //如果升级模式不为空且文件大小不为0则设置按钮可点击
                         if (fileUri != null && updateMode != null) {
                             setUpdateBtnEnabled(true);
                         }
@@ -85,13 +79,20 @@ public class DeviceUpdateActivity extends BaseActivity implements View.OnClickLi
                         invalidateOptionsMenu();
                     } else if (BluetoothLeService.ACTION_GATT_DISCONNECTED.equals(action)) { // 处理断开广播
                         mConnected = false;
-                        setUpdateBtnEnabled(false);//按钮不可点击
+                        synchronized (obj) {
+                            //如果设备在发送数据的过程中断开连接，
+                            // 则通知正在发送数据的线程避免一直处于等待状态，并执行连接断开后的逻辑
+                            obj.notify();
+                        }
+                        setUpdateBtnEnabled(false);//设置更新按钮不可点击
                         setUpdateProgress(false);//隐藏进度条
+                        setChooseModeBtnenable(true);//设置模式选择按钮可点击
                         updateConnectionState(R.string.disconnected);
+                        runOnUiThread(() -> chooseModeBtn.setText(R.string.update_mode));
                         invalidateOptionsMenu();
                     } else if (BluetoothLeService.CHARACTERISTIC_WRITE_FAILURE.equals(action)) {
                         mWriteSuccess = false;
-                        displayLog(getString(R.string.failed_update));
+                        displayLog(getString(R.string.failure_update));
                     } else if (BluetoothLeService.CHARACTERISTIC_WRITE_SUCCESS.equals(action)) {
                         synchronized (obj) {
                             obj.notify();
@@ -99,87 +100,6 @@ public class DeviceUpdateActivity extends BaseActivity implements View.OnClickLi
                     }
                 }
             };
-
-    private final DfuProgressListener dfuProgressListener = new DfuProgressListener() {
-        final String TAG = DfuProgressListener.class.getSimpleName();
-
-        @Override
-        public void onDeviceConnecting(@NonNull String deviceAddress) {
-            displayLog(getString(R.string.connecting_device));
-            Log.w(TAG, "onDeviceConnecting: ");
-        }
-
-        @Override
-        public void onDeviceConnected(@NonNull String deviceAddress) {
-            displayLog(getString(R.string.connected_device));
-            setUpdateProgress(false);
-            Log.w(TAG, "onDeviceConnected: ");
-        }
-
-        @Override
-        public void onDfuProcessStarting(@NonNull String deviceAddress) {
-            Log.w(TAG, "onDfuProcessStarting: ");
-        }
-
-        @Override
-        public void onDfuProcessStarted(@NonNull String deviceAddress) {
-            displayLog(getString(R.string.start_update));
-            setUpdateProgress(true);
-            Log.w(TAG, "onDfuProcessStarted: ");
-        }
-
-        @Override
-        public void onEnablingDfuMode(@NonNull String deviceAddress) {
-            Log.w(TAG, "onEnablingDfuMode: ");
-
-        }
-
-        @Override
-        public void onProgressChanged(@NonNull String deviceAddress, int percent, float speed, float avgSpeed, int currentPart, int partsTotal) {
-            setUpdateProgressProcess(percent);
-            Log.w(TAG, "onProgressChanged: ");
-        }
-
-        @Override
-        public void onFirmwareValidating(@NonNull String deviceAddress) {
-            displayLog(getString(R.string.firmware_vaildating));
-            Log.w(TAG, "onFirmwareValidating: ");
-        }
-
-        @Override
-        public void onDeviceDisconnecting(String deviceAddress) {
-            displayLog(getString(R.string.disconnecting_device));
-            Log.w(TAG, "onDeviceDisconnecting: ");
-        }
-
-        @Override
-        public void onDeviceDisconnected(@NonNull String deviceAddress) {
-            displayLog(getString(R.string.dusconnected_device));
-            setUpdateProgress(false);
-            Log.w(TAG, "onDeviceDisconnected: ");
-        }
-
-        @Override
-        public void onDfuCompleted(@NonNull String deviceAddress) {
-            displayLog(getString(R.string.update_completed));
-            setUpdateProgress(false);
-            Log.w(TAG, "onDfuCompleted: ");
-        }
-
-        @Override
-        public void onDfuAborted(@NonNull String deviceAddress) {
-            displayLog(getString(R.string.update_aborted));
-            setUpdateProgress(false);
-            Log.w(TAG, "onDfuAborted: ");
-        }
-
-        @Override
-        public void onError(@NonNull String deviceAddress, int error, int errorType, String message) {
-            displayLog(getString(R.string.update_error));
-            setUpdateProgress(false);
-            Log.w(TAG, "onError: ");
-        }
-    };
 
 
     @Override
@@ -194,26 +114,17 @@ public class DeviceUpdateActivity extends BaseActivity implements View.OnClickLi
         Objects.requireNonNull(getSupportActionBar()).setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setHomeButtonEnabled(true); // 设置返回键可用
         initView();
-        setOnClickListerner();
-        DfuUtils.getInstance().setmDfuProgressListener(this, dfuProgressListener);
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        DfuServiceListenerHelper.registerProgressListener(this, dfuProgressListener); //监听升级进度
+        setOnClickListener();
     }
 
     @Override
     protected void onStop() {
         super.onStop();
-        i = 0;
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        DfuUtils.getInstance().dispose(mContext, dfuProgressListener);
     }
 
     @Override
@@ -286,6 +197,49 @@ public class DeviceUpdateActivity extends BaseActivity implements View.OnClickLi
         return super.onOptionsItemSelected(item);
     }
 
+    @Override
+    public void onClick(View v) {
+        if (!mConnected) {
+            displayLog(getString(R.string.disconnected_device));
+            return;
+        }
+
+        switch (v.getId()) {
+            case R.id.mode_choose_btn:
+                chooseUpdateMode();
+                break;
+            case R.id.connect_state:
+                if (!mConnected) {
+                    connect(deviceAddress);
+                } else {
+                    disconnect(deviceAddress);
+                }
+                break;
+            case R.id.update_btn:
+                if (!mConnected) {
+                    ToastUtil.showShort(mContext, R.string.unconnected_device);
+                }
+                switch (updateMode) {
+                    case UI_UPDATE:
+                        parseMultiPkg(0);
+                        break;
+                    case FONT_UPDATE:
+                        parseMultiPkg(1);
+                        break;
+                    case OTA_UPDATE:
+                        parseMultiPkg(2);
+                        break;
+                    case FACE_UPDATE:
+                        parseFaceCMD(new byte[]{0x01, 0x00}, (byte) 0x02, (byte) 0x8E);
+                        break;
+                    default:
+                        ToastUtil.showShort(mContext, getString(R.string.cannot_find_mode));
+                }
+                break;
+            default:
+                throw new IllegalStateException("Unexpected value: " + v.getId());
+        }
+    }
 
     //选择更新模式
     private void chooseUpdateMode() {
@@ -302,64 +256,47 @@ public class DeviceUpdateActivity extends BaseActivity implements View.OnClickLi
                     switch (item.getItemId()) {
                         case R.id.menu_update_ui:
                             displayLog(getString(R.string.ui_update));
+                            chooseModeBtn.setText(R.string.ui_update);
                             updateMode = UpdateMode.UI_UPDATE;
-                            if (mConnected && mFileData != null && mFileData.length > 0) {
-                                setUpdateBtnEnabled(true);
-                            } else {
-                                setUpdateBtnEnabled(false);
-                            }
+                            setUpdateBtnEnabled(mConnected && mFileData != null && mFileData.length > 0);
                             break;
                         case R.id.menu_update_font:
                             displayLog(getString(R.string.font_update));
+                            chooseModeBtn.setText(R.string.font_update);
                             updateMode = UpdateMode.FONT_UPDATE;
-                            if (mConnected && mFileData != null && mFileData.length > 0) {
-                                setUpdateBtnEnabled(true);
-                            } else {
-                                setUpdateBtnEnabled(false);
-                            }
+                            setUpdateBtnEnabled(mConnected && mFileData != null && mFileData.length > 0);
                             break;
                         case R.id.menu_update_ota:
                             displayLog(getString(R.string.ota_update));
+                            chooseModeBtn.setText(R.string.ota_update);
                             updateMode = UpdateMode.OTA_UPDATE;
-                            if (mConnected && mFileData != null && mFileData.length > 0) {
-                                setUpdateBtnEnabled(true);
-                            } else {
-                                setUpdateBtnEnabled(false);
-                            }
+                            setUpdateBtnEnabled(mConnected && mFileData != null && mFileData.length > 0);
                             break;
                         case R.id.menu_update_face:
                             displayLog(getString(R.string.face_update));
+                            chooseModeBtn.setText(R.string.face_update);
                             updateMode = UpdateMode.FACE_UPDATE;
-                            if (mConnected && mFileData != null && mFileData.length > 0) {
-                                setUpdateBtnEnabled(true);
-                            } else {
-                                setUpdateBtnEnabled(false);
-                            }
+                            setUpdateBtnEnabled(mConnected && mFileData != null && mFileData.length > 0);
                             break;
-                        case R.id.menu_update_dfu:
-                            displayLog(getString(R.string.dfu_update));
-                            updateMode = UpdateMode.DFU_UPDATE;
-                            if (mConnected && fileUri != null) {
-                                setUpdateBtnEnabled(true);
-                            } else {
-                                setUpdateBtnEnabled(false);
-                            }
-                            break;
+
                     }
                     //选择模式后重置状态
                     fileUri = null;
                     filePath = null;
                     mFileData = null;
+                    setUpdateBtnEnabled(false);
+                    updateBtn.setText(R.string.start_update);
                     return true;
                 });
     }
 
 
     void parseMultiPkg(int fileType) {
+        setUpdateBtnEnabled(false);
+        setChooseModeBtnenable(false);
         new Thread(
                 () -> {
                     synchronized (obj) {
-
                         long length = mFileData.length + 5; // 数据部分长度,需要加上文件类型和文件的数据长度
                         int PKG_NUM; // 包数
                         PKG_NUM =
@@ -368,8 +305,6 @@ public class DeviceUpdateActivity extends BaseActivity implements View.OnClickLi
                                         : (int) ((length + 8) / 0xB2) + 1;
 
                         updateProgress.setMax(PKG_NUM);
-                        runOnUiThread(() -> updatePrecossTotalTxt.setText(String.valueOf(PKG_NUM - 1)));
-
 
                         // 包数的高低位
                         byte lowPkgNum = (byte) (PKG_NUM & 0xFF);
@@ -413,13 +348,6 @@ public class DeviceUpdateActivity extends BaseActivity implements View.OnClickLi
                         // TODO: 2021/8/29   处理发送逻辑
                         for (i = 0; i < PKG_NUM; i++) {
                             mWriteSuccess = true;//重置写入状态
-
-                            //如果更新过程断开连接则取消发送
-                            if (!mConnected) {
-                                displayLog(getString(R.string.disconnected__failed_update));
-                                setUpdateProgress(false);
-                                break;
-                            }
 
                             //计算是第几个包
                             numPkgLow = (byte) (i & 0xFF);
@@ -481,14 +409,13 @@ public class DeviceUpdateActivity extends BaseActivity implements View.OnClickLi
                             Log.w(TAG, "sendMultiPkgCmd:i= " + i);
 
                             // 传入发送进度
-                            setUpdateProgressProcess(i);
+                            setUpdateProgressProcess(i, PKG_NUM);
 
-//                            final StringBuilder stringBuilder = new StringBuilder(pkg.length);
-//                            for (byte byteChar : pkg)
-//                                stringBuilder.append(String.format("%02X ", byteChar));
-//                            Log.w(TAG, "sendMultiPkgCmd: " + stringBuilder.toString());
+//                            showPkgData(pkg);
 
                             bluetoothLeService.writeCharacteristic(deviceAddress, pkg);//写入数据到设备
+
+                            Log.e(TAG, "parseMultiPkg: 1");
 
                             try {
                                 obj.wait();//发送数据后进入等待，直到收到写入后的回调通知
@@ -496,27 +423,58 @@ public class DeviceUpdateActivity extends BaseActivity implements View.OnClickLi
                                 e.printStackTrace();
                             }
 
+                            //如果更新过程断开连接则取消发送
+                            if (!mConnected) {
+                                displayLog(getString(R.string.disconnected__failed_update));
+                                runOnUiThread(() -> updateBtn.setText(R.string.failure_update));
+                                setUpdateBtnEnabled(false);
+                                setUpdateProgress(false);
+                                filePath = null;
+                                fileUri = null;
+                                mFileData = null;
+                                break;
+                            }
+
                             //判断收到的回调是否写入成功，若失败则停止发送
                             if (!mWriteSuccess) {
                                 displayLog(getString(R.string.send_failed) + "(" + i + "/" + PKG_NUM + ")");
                                 runOnUiThread(
-                                        () -> setUpdateProgress(false));
+                                        () -> {
+                                            setUpdateProgress(false);
+                                            updateBtn.setText(R.string.failure_update);
+                                            chooseModeBtn.setText(R.string.update_mode);
+                                        });
+                                filePath = null;
+                                fileUri = null;
+                                mFileData = null;
+                                setChooseModeBtnenable(true);
                                 break;
                             }
                         }// TODO: 2021/8/29 发送结束
 
                         setUpdateProgress(false);//更新结束隐藏进度条
-
                         //判断是否更新完成
-                        if (mWriteSuccess) {
-                            displayLog(getString(R.string.send_completed));
+                        if (mWriteSuccess && mConnected) {
+                            runOnUiThread(() -> {
+                                displayLog(getString(R.string.send_completed));
+                                updateBtn.setText(R.string.complete_update);
+                                chooseModeBtn.setText(R.string.update_mode);
+                            });
+                            filePath = null;
+                            fileUri = null;
+                            mFileData = null;
+                            setChooseModeBtnenable(true);
                         }
                     }
                 })
                 .start();
+
     }
 
+
     private void parseFaceCMD(byte[] faceId, byte CMD_CLASS, byte CMD_ID) {
+        setUpdateBtnEnabled(false);
+        setChooseModeBtnenable(false);
         new Thread(
                 () -> {
                     synchronized (obj) {
@@ -530,7 +488,6 @@ public class DeviceUpdateActivity extends BaseActivity implements View.OnClickLi
                                         : (int) ((length + 8) / 0xB2) + 1;
 
                         updateProgress.setMax(PKG_NUM);
-                        runOnUiThread(() -> updatePrecossTotalTxt.setText(String.valueOf(PKG_NUM - 1)));
 
                         // 包数的高低位
                         byte lowPkgNum = (byte) (PKG_NUM & 0xFF);
@@ -577,13 +534,7 @@ public class DeviceUpdateActivity extends BaseActivity implements View.OnClickLi
 
                         // 处理发送逻辑
                         for (i = 0; i < PKG_NUM; i++) {
-
-                            if (!mConnected) {
-                                mWriteSuccess = true;
-                                displayLog(getString(R.string.disconnected_send_failed));
-                                setUpdateProgress(false);
-                                break;
-                            }
+                            mWriteSuccess = true;
 
                             byte[] pkg = new byte[182];
                             numPkgLow = (byte) (i & 0xFF);
@@ -645,12 +596,9 @@ public class DeviceUpdateActivity extends BaseActivity implements View.OnClickLi
                             Log.w(TAG, "sendMultiPkgCmd:i= " + i);
 
                             // 传入发送进度
-                            setUpdateProgressProcess(i);
+                            setUpdateProgressProcess(i, PKG_NUM);
 
-//                            final StringBuilder stringBuilder = new StringBuilder(pkg.length);
-//                            for (byte byteChar : pkg)
-//                                stringBuilder.append(String.format("%02X ", byteChar));
-                            //                  Log.w(TAG, "sendMultiPkgCmd: " + stringBuilder.toString());
+//                            showPkgData(pkg);
 
                             Log.e(TAG, "parseFaceCMD:写入");
                             bluetoothLeService.writeCharacteristic(deviceAddress, pkg);
@@ -661,21 +609,56 @@ public class DeviceUpdateActivity extends BaseActivity implements View.OnClickLi
                                 e.printStackTrace();
                             }
 
-                            if (!mWriteSuccess) {
-                                displayLog("发送失败 (" + i + "/" + PKG_NUM + ")");
+                            if (!mConnected) {
+                                displayLog(getString(R.string.disconnected_send_failed));
+                                runOnUiThread(() -> updateBtn.setText(R.string.failure_update));
+                                setUpdateBtnEnabled(false);
                                 setUpdateProgress(false);
-                                Thread.interrupted();
+                                filePath = null;
+                                fileUri = null;
+                                mFileData = null;
+                                break;
+                            }
+
+                            if (!mWriteSuccess) {
+                                displayLog(getString(R.string.failure_send) + " (" + i + "/" + PKG_NUM + ")");
+                                setUpdateProgress(false);
+                                runOnUiThread(() -> {
+                                    updateBtn.setText(R.string.failure_update);
+                                    chooseModeBtn.setText(R.string.update_mode);
+                                });
+                                filePath = null;
+                                fileUri = null;
+                                mFileData = null;
+                                setChooseModeBtnenable(true);
                                 return;
                             }
                         }
+
                         setUpdateProgress(false);
-                        if (mWriteSuccess) {
-                            displayLog(getString(R.string.send_completed));
+                        if (mWriteSuccess && mConnected) {
+                            runOnUiThread(() -> {
+                                displayLog(getString(R.string.send_completed));
+                                updateBtn.setText(R.string.complete_update);
+                                chooseModeBtn.setText(R.string.update_mode);
+                            });
+                            filePath = null;
+                            fileUri = null;
+                            mFileData = null;
+                            setChooseModeBtnenable(true);
                         }
                         mWriteSuccess = true;
                     }
                 })
                 .start();
+    }
+
+    //展示收到或发送的每一包数据
+    private void showPkgData(byte[] pkg) {
+        final StringBuilder stringBuilder = new StringBuilder(pkg.length);
+        for (byte byteChar : pkg)
+            stringBuilder.append(String.format("%02X ", byteChar));
+        Log.w(TAG, "sendMultiPkgCmd: " + stringBuilder.toString());
     }
 
     //打开文件管理器
@@ -694,57 +677,9 @@ public class DeviceUpdateActivity extends BaseActivity implements View.OnClickLi
     }
 
     //设置控件点击事件
-    private void setOnClickListerner() {
+    private void setOnClickListener() {
         updateBtn.setOnClickListener(this);
-        connectionState.setOnClickListener(this);
         chooseModeBtn.setOnClickListener(this);
-    }
-
-    @Override
-    public void onClick(View v) {
-        if (!mConnected) {
-            displayLog(getString(R.string.disconnected_device));
-            return;
-        }
-
-        switch (v.getId()) {
-            case R.id.mode_choose_btn:
-                chooseUpdateMode();
-                break;
-            case R.id.connect_state:
-                if (!mConnected) {
-                    connect(deviceAddress);
-                } else {
-                    disconnect(deviceAddress);
-                }
-                break;
-            case R.id.update_btn:
-                if (!mConnected) {
-                    ToastUtil.showShort(mContext, R.string.unconnected_device);
-                }
-                switch (updateMode) {
-                    case UI_UPDATE:
-                        parseMultiPkg(0);
-                        break;
-                    case FONT_UPDATE:
-                        parseMultiPkg(1);
-                        break;
-                    case OTA_UPDATE:
-                        parseMultiPkg(2);
-                        break;
-                    case FACE_UPDATE:
-                        parseFaceCMD(new byte[]{0x01, 0x00}, (byte) 0x02, (byte) 0x8E);
-                        break;
-                    case DFU_UPDATE:
-                        DfuUtils.getInstance().startUpdate(mContext, deviceAddress, deviceName, fileUri, filePath);
-                        break;
-                    default:
-                        ToastUtil.showShort(mContext, getString(R.string.cannot_find_mode));
-                }
-                break;
-            default:
-                throw new IllegalStateException("Unexpected value: " + v.getId());
-        }
     }
 
     //展示操作记录
@@ -761,18 +696,35 @@ public class DeviceUpdateActivity extends BaseActivity implements View.OnClickLi
     }
 
     // 设置连接状态
-    @SuppressLint("ResourceAsColor")
     private void updateConnectionState(final int resourceId) {
-        runOnUiThread(() -> connectionState.setText(resourceId));
-    }
-
-    private void setUpdateProgressProcess(int percent) {
         runOnUiThread(() -> {
-            updateProgress.setProgress(percent);
-            updateProcessPrecentTxt.setText(String.valueOf(percent));
+            if (resourceId == R.string.connected) {
+                connectionState.setTextColor(Color.GREEN);
+            } else {
+                connectionState.setTextColor(Color.RED);
+            }
+            connectionState.setText(resourceId);
         });
     }
 
+    //更新进度
+    private void setUpdateProgressProcess(int percent, int pkgNum) {
+        runOnUiThread(() -> {
+            int progress = (int) ((100.0 / pkgNum) * percent);
+            updateProgress.setProgress(percent);
+            updateProcessPercentTxt.setText(String.valueOf(progress));
+            int updatingTxt = percent % 80;
+            if (updatingTxt >= 0 && updatingTxt < 20) {
+                updateBtn.setText(R.string.failure_update);
+            } else if (updatingTxt >= 20 && updatingTxt < 40) {
+                updateBtn.setText(R.string.failure_update+".");
+            } else if (updatingTxt >= 40 && updatingTxt < 60) {
+                updateBtn.setText(R.string.failure_update+"..");
+            } else {
+                updateBtn.setText(R.string.failure_update+"...");
+            }
+        });
+    }
 
     //设置进度条的展示和隐藏
     void setUpdateProgress(boolean enable) {
@@ -785,6 +737,11 @@ public class DeviceUpdateActivity extends BaseActivity implements View.OnClickLi
                 updateProgress.setVisibility(View.GONE);
             }
         });
+    }
+
+    //设置更新模式选择按钮的展示和隐藏
+    private void setChooseModeBtnenable(boolean enable) {
+        runOnUiThread(() -> chooseModeBtn.setEnabled(enable));
     }
 
     //设置按键可点击

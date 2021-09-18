@@ -5,13 +5,12 @@ import android.widget.Button;
 import android.widget.PopupMenu;
 
 import example.suntong.bletool.BluetoothCommand;
-import example.suntong.bletool.interfaces.Iview;
 import example.suntong.bletool.R;
 import example.suntong.bletool.service.BluetoothLeService;
 
 public class TempControl {
 
-    public static void onRequestLiveTempData(Context context, Iview view, Button tempControlBtn, BluetoothLeService bluetoothLeService, String deviceAddress) {
+    public static void onRequestLiveTempData(Context context, Button tempControlBtn, BluetoothLeService bluetoothLeService, String deviceAddress) {
         PopupMenu popupMenu = new PopupMenu(context, tempControlBtn);
         popupMenu.getMenuInflater().inflate(R.menu.pop_temp_menu, popupMenu.getMenu());
         popupMenu.show();

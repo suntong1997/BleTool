@@ -59,8 +59,8 @@ public class MainActivity extends AppCompatActivity {
     private long mBackPressed;
     private AlertDialog alertDialog;
     private SearchView mSearchView;
-    private List<DeviceItemBean> mDevices = new ArrayList<>();//用来存储扫描到的设备
-    private List<DeviceItemBean> oldDevices = new ArrayList<>();//用来存储扫描到的设备
+    private final List<DeviceItemBean> mDevices = new ArrayList<>();//用来存储扫描到的设备
+    private final List<DeviceItemBean> oldDevices = new ArrayList<>();//用来存储扫描到的设备
 
     List<DeviceItemBean> filterList = new ArrayList<>();//用来过滤搜索数据的列表
 
@@ -88,7 +88,6 @@ public class MainActivity extends AppCompatActivity {
         mRecyclerView.addItemDecoration(new DividerItemDecoration(this, DividerItemDecoration.VERTICAL));
 
         if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
-
             ToastUtil.showShort(this, R.string.ble_not_supported);
             finish();
         }
@@ -112,6 +111,8 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        mAdapter = new LeDeviceListAdapter(mDevices, MainActivity.this);
+        mRecyclerView.setAdapter(mAdapter);
 
         //动态请求权限
         PermissionUtil.requestPermission(permissions, MainActivity.this);
@@ -144,37 +145,31 @@ public class MainActivity extends AppCompatActivity {
         textView.setHintTextColor(Color.parseColor("#CCCCCC"));
         //  TODO 更改搜索文字颜色代码结束
         //搜索时触发回调
-        mSearchView.setOnSearchClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                mHandler.removeCallbacks(mRunnable);
-                for (DeviceItemBean bean : mDevices) {
-                    bean.setSelected(false);
-                }
-
-                ToastUtil.showShort(MainActivity.this, "搜索");
-                menu.findItem(R.id.menu_stop).setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER);
-                menu.findItem(R.id.menu_scan).setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER);
-                menu.findItem(R.id.menu_refresh).setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER);
+        mSearchView.setOnSearchClickListener(v -> {
+            mHandler.removeCallbacks(mRunnable);
+            for (DeviceItemBean bean : mDevices) {
+                bean.setSelected(false);
             }
+
+            ToastUtil.showShort(MainActivity.this, "搜索");
+            menu.findItem(R.id.menu_stop).setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER);
+            menu.findItem(R.id.menu_scan).setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER);
+            menu.findItem(R.id.menu_refresh).setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER);
         });
 
         //关闭搜索时回调
-        mSearchView.setOnCloseListener(new SearchView.OnCloseListener() {
-            @Override
-            public boolean onClose() {
-                scanLeDevice(false);
-                Collections.sort(oldDevices, new Comparator<DeviceItemBean>() {
-                    @Override
-                    public int compare(DeviceItemBean o1, DeviceItemBean o2) {
-                        return o2.getRssi() - o1.getRssi();
-                    }
-                });
-                menu.findItem(R.id.menu_stop).setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
-                menu.findItem(R.id.menu_scan).setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
-                menu.findItem(R.id.menu_refresh).setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
-                return false;
-            }
+        mSearchView.setOnCloseListener(() -> {
+            scanLeDevice(false);
+            Collections.sort(oldDevices, new Comparator<DeviceItemBean>() {
+                @Override
+                public int compare(DeviceItemBean o1, DeviceItemBean o2) {
+                    return o2.getRssi() - o1.getRssi();
+                }
+            });
+            menu.findItem(R.id.menu_stop).setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
+            menu.findItem(R.id.menu_scan).setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
+            menu.findItem(R.id.menu_refresh).setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
+            return false;
         });
 
         //输入时的回调
@@ -190,12 +185,7 @@ public class MainActivity extends AppCompatActivity {
                 searchViewClicked = true;
                 filterList.clear();
                 filterList = FilterHelper.filter(oldDevices, newText);//获取过滤后的数据
-                Collections.sort(filterList, new Comparator<DeviceItemBean>() {
-                    @Override
-                    public int compare(DeviceItemBean o1, DeviceItemBean o2) {
-                        return o2.getRssi() - o1.getRssi();
-                    }
-                });
+                Collections.sort(filterList, (o1, o2) -> o2.getRssi() - o1.getRssi());
                 if (filterList.size() > 0 && filterList != null) {
                     mAdapter.clear();
                     mAdapter.addDevices(filterList);
@@ -284,59 +274,47 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void onLeScan(final BluetoothDevice device, int rssi, byte[] scanRecord) {
                     final String TAG = "onLeScan";
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
+                    runOnUiThread(() -> {
 
-                            //  TODO 新建javaBean保存蓝牙设备信息
-                            DeviceItemBean scanDevice = new DeviceItemBean();
-                            scanDevice.setName(device.getName());
-                            scanDevice.setAddress(device.getAddress());
-                            scanDevice.setRssi(rssi);
-                            //  根据设备address去重复
-                            if (mDevices.size() > 0) {
-                                for (DeviceItemBean bean : mDevices) {
-                                    if (!TextUtils.isEmpty(bean.getAddress())) {
-                                        if (scanDevice.getAddress().equals(bean.getAddress())) {
-                                            return;
-                                        }
+                        //  TODO 新建javaBean保存蓝牙设备信息
+                        DeviceItemBean scanDevice = new DeviceItemBean();
+                        scanDevice.setName(device.getName());
+                        scanDevice.setAddress(device.getAddress());
+                        scanDevice.setRssi(rssi);
+                        //  根据设备address去重复
+                        if (mDevices.size() > 0) {
+                            for (DeviceItemBean bean : mDevices) {
+                                if (!TextUtils.isEmpty(bean.getAddress())) {
+                                    if (scanDevice.getAddress().equals(bean.getAddress())) {
+                                        return;
                                     }
                                 }
                             }
-                            if (!searchViewClicked) {
-                                if (!mDevices.contains(scanDevice)) {
-                                    mDevices.add(scanDevice);//存储扫描到的设备
-                                    //  保存一份不会被操作的设备列表，用于恢复列表数据
-                                    oldDevices.add(scanDevice);//存储扫描到的设备
-                                }
-                            }
-                            //  根据信号值进行倒序
-                            Collections.sort(mDevices, new Comparator<DeviceItemBean>() {
-                                @Override
-                                public int compare(DeviceItemBean o1, DeviceItemBean o2) {
-                                    return o2.getRssi() - o1.getRssi();
-                                }
-                            });
-                            //将设备添加到列表中
-                            mAdapter = new LeDeviceListAdapter(mDevices, MainActivity.this);
-                            mRecyclerView.setAdapter(mAdapter);
-//                            mAdapter.addDevices(mDevices);
-                            mAdapter.notifyDataSetChanged();
                         }
+                        if (!searchViewClicked) {
+                            if (!mDevices.contains(scanDevice)&& scanDevice.getName() != null ) {
+                                mDevices.add(scanDevice);//存储扫描到的设备
+                                //  保存一份不会被操作的设备列表，用于恢复列表数据
+                                oldDevices.add(scanDevice);//存储扫描到的设备
+                            }
+                        }
+                        //  根据信号值进行倒序
+                        Collections.sort(mDevices, (o1, o2) -> o2.getRssi() - o1.getRssi());
+                        //将设备添加到列表中
+//                            mAdapter = new LeDeviceListAdapter(mDevices, MainActivity.this);
+//                            mRecyclerView.setAdapter(mAdapter);
+//                            mAdapter.addDevices(mDevices);
+                        mAdapter.notifyItemChanged(mDevices.indexOf(scanDevice));
                     });
                 }
             };
 
     //扫描设备
     private void scanLeDevice(final boolean enable) {
-        mRunnable = new Runnable() {
-            @Override
-            public void run() {
-                mScanning = false;
-//                Toast.makeText(MainActivity.this, "停止扫描", Toast.LENGTH_SHORT).show();
-                mBluetoothAdapter.stopLeScan(mLeScanCallback);
-                invalidateOptionsMenu();
-            }
+        mRunnable = () -> {
+            mScanning = false;
+            mBluetoothAdapter.stopLeScan(mLeScanCallback);
+            invalidateOptionsMenu();
         };
         if (enable) {
             //超时停止扫描

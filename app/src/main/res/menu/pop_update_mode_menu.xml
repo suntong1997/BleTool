@@ -2,20 +2,16 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
         android:id="@+id/menu_update_ui"
-        android:title="界面更新" />
+        android:title="@string/ui_update" />
 
     <item
         android:id="@+id/menu_update_font"
-        android:title="字库更新" />
+        android:title="@string/font_update" />
 
     <item
         android:id="@+id/menu_update_ota"
-        android:title="固件更新" />
+        android:title="@string/ota_update" />
     <item
         android:id="@+id/menu_update_face"
-        android:title="表盘更新" />
-    <item
-        android:id="@+id/menu_update_dfu"
-        android:title="DFU更新" />
-
+        android:title="@string/face_update" />
 </menu>

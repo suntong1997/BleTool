@@ -1,11 +1,12 @@
 package example.suntong.bletool.ui.activity;
 
-import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Bundle;
+import android.os.Environment;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.Menu;
@@ -23,11 +24,9 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import example.suntong.bletool.BluetoothCommand;
 import example.suntong.bletool.DataParser;
+import example.suntong.bletool.FileUtil;
 import example.suntong.bletool.FilterHelper;
-import example.suntong.bletool.util.HideSoftInputUtil;
-import example.suntong.bletool.interfaces.Iview;
 import example.suntong.bletool.R;
-import example.suntong.bletool.util.ToastUtil;
 import example.suntong.bletool.functions.ActivityFunction;
 import example.suntong.bletool.functions.HeartRateControl;
 import example.suntong.bletool.functions.HistoryData;
@@ -35,8 +34,12 @@ import example.suntong.bletool.functions.SportNotification;
 import example.suntong.bletool.functions.SyncDate;
 import example.suntong.bletool.functions.TempControl;
 import example.suntong.bletool.functions.TimeFormat;
-import example.suntong.bletool.functions.VolumnControl;
+import example.suntong.bletool.functions.VolumeControl;
+import example.suntong.bletool.interfaces.Iview;
 import example.suntong.bletool.service.BluetoothLeService;
+import example.suntong.bletool.util.HideSoftInputUtil;
+import example.suntong.bletool.util.TimeUtil;
+import example.suntong.bletool.util.ToastUtil;
 
 public class DebugActivity extends BaseActivity implements View.OnClickListener, Iview {
 
@@ -45,11 +48,12 @@ public class DebugActivity extends BaseActivity implements View.OnClickListener,
     private final Object obj = new Object();
     private final String TAG = DebugActivity.class.getSimpleName();
     private DataParser dataParser;
-    private String[][] reciveMultiPkg = new String[10][];
-    private int recivePkgNum;
-    private boolean isReciveMultPkg = false;
+    private String[][] receiveMultiPkg = new String[10][];
+    private int receivePkgNum;
+    private boolean isReceiveMultiPkg = false;
     private int index = 0;
     private int num;
+    private String displayTxt;
 
     @BindView(R.id.tool_bar)
     Toolbar toolbar;
@@ -93,6 +97,12 @@ public class DebugActivity extends BaseActivity implements View.OnClickListener,
     Button macAddressBtn;
     @BindView(R.id.time_format)
     Button setTimeModeBtn;
+    @BindView(R.id.firmware_version)
+    Button getFirmwareVersion;
+    @BindView(R.id.history_spo2)
+    Button historySpo2Btn;
+    @BindView(R.id.export_file)
+    Button exportBtn;
 
     // TODO 处理接收到的广播
     private final BroadcastReceiver mGattUpdateReceiver =
@@ -110,7 +120,7 @@ public class DebugActivity extends BaseActivity implements View.OnClickListener,
                         updateConnectionState(R.string.disconnected);
                         invalidateOptionsMenu();
                     } else if (BluetoothLeService.ACTION_DATA_AVAILABLE.equals(action)) {//处理接收到的数据
-                        parseReciveData(intent);
+                        parseReceiveData(intent);
                     } else if (BluetoothLeService.CHARACTERISTIC_WRITE_SUCCESS.equals(action)) {
                         synchronized (obj) {
                             obj.notify();
@@ -136,7 +146,7 @@ public class DebugActivity extends BaseActivity implements View.OnClickListener,
         getSupportActionBar().setHomeButtonEnabled(true); // 设置返回键可用
 
         initView();
-        setOnClickListerner();
+        setOnClickListener();
     }
 
     @Override
@@ -144,7 +154,7 @@ public class DebugActivity extends BaseActivity implements View.OnClickListener,
         super.onActivityResult(requestCode, resultCode, resultData);
         if (requestCode == 1111 && resultCode == Activity.RESULT_OK) {
             num = resultData.getIntExtra("number", 1);
-            displayData("设置数值：" + num);
+            displayData(getString(R.string.value_setting) + num);
         }
     }
 
@@ -161,7 +171,6 @@ public class DebugActivity extends BaseActivity implements View.OnClickListener,
         return true;
     }
 
-    @SuppressLint("NonConstantResourceId")
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
@@ -180,29 +189,29 @@ public class DebugActivity extends BaseActivity implements View.OnClickListener,
         return super.onOptionsItemSelected(item);
     }
 
-    private void parseReciveData(Intent intent) {
+    private void parseReceiveData(Intent intent) {
         String data = intent.getStringExtra(BluetoothLeService.EXTRA_DATA);
         Log.w(TAG, "onReceive:" + data);
         String[] dataList = data.split(" "); // 把传过来的数据字符串拆分成数组
 
         // TODO: 2021/8/30 处理接收到的多包数据
         if (dataList[0].equals("7F") && dataList[2].equals("00")) {
-            isReciveMultPkg = true;//设置多包接收中
-            recivePkgNum = Byte.parseByte(dataList[4], 16) + Byte.parseByte(dataList[5], 16) * 0x100;
-            reciveMultiPkg[0] = dataList;
+            isReceiveMultiPkg = true;//设置多包接收标志为true
+            receivePkgNum = Byte.parseByte(dataList[4], 16) + Byte.parseByte(dataList[5], 16) * 0x100;//计算包数
+            receiveMultiPkg[0] = dataList;
             index++;
-        } else if (isReciveMultPkg && index == Byte.parseByte(dataList[2])) {
-            if (index < recivePkgNum) {
-                reciveMultiPkg[index] = dataList;
+        } else if (isReceiveMultiPkg && index == Byte.parseByte(dataList[2])) {
+            if (index < receivePkgNum) {
+                receiveMultiPkg[index] = dataList;
                 index++;
             }
         }
         //如果最后一包接收完成则进行重置
-        if (isReciveMultPkg && index == recivePkgNum) {
-            isReciveMultPkg = false;//将接收多包状态设置为false
-            dataParser.parseMultiData(reciveMultiPkg, recivePkgNum);
-            reciveMultiPkg = new String[10][];
-            recivePkgNum = 0;
+        if (isReceiveMultiPkg && index == receivePkgNum) {
+            isReceiveMultiPkg = false;//将接收多包状态设置为false
+            dataParser.parseMultiData(receiveMultiPkg, receivePkgNum);//解析收到的数据
+            receiveMultiPkg = new String[10][];
+            receivePkgNum = 0;
             index = 0;
         }
         //如果接收到的数据是单包则调用该方法
@@ -212,9 +221,15 @@ public class DebugActivity extends BaseActivity implements View.OnClickListener,
     }
 
     // 设置连接状态
-    @SuppressLint("ResourceAsColor")
     private void updateConnectionState(final int resourceId) {
-        runOnUiThread(() -> connectionState.setText(resourceId));
+        runOnUiThread(() -> {
+            if (resourceId == R.string.connected) {
+                connectionState.setTextColor(Color.GREEN);
+            } else {
+                connectionState.setTextColor(Color.RED);
+            }
+            connectionState.setText(resourceId);
+        });
     }
 
     private void initView() {
@@ -240,7 +255,7 @@ public class DebugActivity extends BaseActivity implements View.OnClickListener,
                 writeCharacteristic(deviceAddress, BluetoothCommand.READ_BATTERY_CMD);
                 break;
             case R.id.update_sport_nofitication:
-                SportNotification.onUpdateSoprtNotification(this, bluetoothLeService, deviceAddress, obj);
+                SportNotification.onUpdateSoprtNotification(bluetoothLeService, deviceAddress, obj);
                 break;
             case R.id.test_vibrato:
                 writeCharacteristic(deviceAddress, BluetoothCommand.TEST_VIBRATO_CMD);
@@ -258,7 +273,7 @@ public class DebugActivity extends BaseActivity implements View.OnClickListener,
                 HistoryData.onRequestDataOfDay(mContext, this, bluetoothLeService, deviceAddress, 0x01, 0x06);
                 break;
             case R.id.temp_contorl:
-                TempControl.onRequestLiveTempData(mContext, this, tempControlBtn, bluetoothLeService, deviceAddress);
+                TempControl.onRequestLiveTempData(mContext, tempControlBtn, bluetoothLeService, deviceAddress);
                 break;
             case R.id.history_hr:
                 HistoryData.onRequestDataOfDay(mContext, this, bluetoothLeService, deviceAddress, 0x01, 0x02);
@@ -269,24 +284,44 @@ public class DebugActivity extends BaseActivity implements View.OnClickListener,
             case R.id.activity_funtion:
                 ActivityFunction.onSendActivityFunction(mContext, num, obj, this, bluetoothLeService, deviceAddress);
                 break;
+            case R.id.history_spo2:
+                HistoryData.onRequestDataOfDay(mContext, this, bluetoothLeService, deviceAddress, 0x01, 0x26);
+                break;
             case R.id.set_number:
                 Intent intent = new Intent(this, NumberPackerActivity.class);
                 startActivityForResult(intent, 1111);
                 break;
             case R.id.set_volume:
-                VolumnControl.onVolumnControl(mContext, num, bluetoothLeService, deviceAddress);
+                VolumeControl.onVolumeControl(mContext, num, bluetoothLeService, deviceAddress);
                 break;
             case R.id.mac_adress:
                 writeCharacteristic(deviceAddress, BluetoothCommand.GET_MAC_ADDRESS);
                 break;
             case R.id.time_format:
-                TimeFormat.onSetTimeFormat(mContext, this, setTimeModeBtn, bluetoothLeService, deviceAddress);
+                TimeFormat.onSetTimeFormat(mContext, setTimeModeBtn, bluetoothLeService, deviceAddress);
                 break;
+            case R.id.firmware_version:
+                writeCharacteristic(deviceAddress, BluetoothCommand.GET_FIRMWARE_VERSION);
+                break;
+            case R.id.export_file:
+
+                writeToFile();
         }
     }
 
+    private void writeToFile() {
+        if (displayEdit == null) {
+            ToastUtil.showShort(mContext, "数据为空");
+            return;
+        }
+        String filePath = Environment.getExternalStorageDirectory().getAbsolutePath() + "/蓝牙历史心率解析/";
+        String fileName = TimeUtil.getCurrentDate() + ".txt";
+
+        FileUtil.getInstance().writeToFile(displayTxt,filePath,fileName);
+    }
+
     //设置控件点击事件
-    void setOnClickListerner() {
+    void setOnClickListener() {
         syncDateBtn.setOnClickListener(this);
         readDateBtn.setOnClickListener(this);
         readBatteryBtn.setOnClickListener(this);
@@ -305,6 +340,9 @@ public class DebugActivity extends BaseActivity implements View.OnClickListener,
         macAddressBtn.setOnClickListener(this);
         setTimeModeBtn.setOnClickListener(this);
         setTimeModeBtn.setOnClickListener(this);
+        getFirmwareVersion.setOnClickListener(this);
+        historySpo2Btn.setOnClickListener(this);
+        exportBtn.setOnClickListener(this);
     }
 
     // 展示读取到的数据到编辑框
@@ -316,9 +354,14 @@ public class DebugActivity extends BaseActivity implements View.OnClickListener,
                         if (!TextUtils.isEmpty(displayEdit.getText())) {
                             displayEdit.append("\n");
                         }
+                        displayTxt = data;//保存一份数据用来存储到本地
                         displayEdit.append(data);
                     }
                 });
     }
 
+    @Override
+    public Context getContext() {
+        return mContext;
+    }
 }

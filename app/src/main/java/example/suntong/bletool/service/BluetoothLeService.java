@@ -17,8 +17,8 @@ import android.os.IBinder;
 import android.util.Log;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 import example.suntong.bletool.GattAttributes;
@@ -29,7 +29,7 @@ public class BluetoothLeService extends Service {
     private BluetoothManager mBluetoothManager;
     private BluetoothAdapter mBluetoothAdapter;
     private BluetoothGatt mBluetoothGatt;
-    private Map<String, BluetoothGatt> gattMap = new HashMap<>();//记录连接到的蓝牙地址
+    private final Map<String, BluetoothGatt> gattMap = new HashMap<>();//记录连接到的蓝牙地址
 
     public static final String ACTION_GATT_CONNECTED =
             "com.example.bluetooth.le.ACTION_GATT_CONNECTED";
@@ -210,7 +210,7 @@ public class BluetoothLeService extends Service {
 
         final BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(address);
         if (device == null) {
-            Log.w(TAG, "找不到设备" + device.getAddress());
+            Log.w(TAG, "找不到设备" + null);
             return false;
         }
 
@@ -234,7 +234,7 @@ public class BluetoothLeService extends Service {
             return;
         }
         BluetoothGatt gatt = gattMap.get(address);
-        gatt.disconnect();
+        Objects.requireNonNull(gatt).disconnect();
     }
 
     public void close() {

@@ -13,7 +13,7 @@
         android:layout_height="@dimen/dimen_50"
         android:background="#039BE5"
         app:theme="@style/ToolbarTheme"
-        app:title="设备名称"
+        app:title="@string/device_name"
         app:titleTextColor="@color/white" />
 
 
@@ -149,7 +149,7 @@
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:text="历史SPO2"
+            android:text="@string/history_spo2"
             android:textSize="11sp" />
     </LinearLayout>
 
@@ -165,7 +165,7 @@
             android:layout_height="match_parent"
             android:layout_marginEnd="5dp"
             android:layout_weight="1"
-            android:text="温度控制"
+            android:text="@string/temp_control"
             android:textSize="12sp" />
 
         <Button
@@ -191,7 +191,7 @@
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:text="历史心率"
+            android:text="@string/history_hr"
             android:textSize="12sp" />
     </LinearLayout>
 
@@ -207,7 +207,7 @@
             android:layout_height="match_parent"
             android:layout_marginEnd="5dp"
             android:layout_weight="1"
-            android:text="历史温度"
+            android:text="@string/history_temp"
             android:textSize="12sp" />
 
 
@@ -217,7 +217,7 @@
             android:layout_height="match_parent"
             android:layout_marginEnd="5dp"
             android:layout_weight="1"
-            android:text="活动功能"
+            android:text="@string/activity_function"
             android:textSize="12sp" />
 
         <Button
@@ -226,7 +226,7 @@
             android:layout_height="match_parent"
             android:layout_marginEnd="5dp"
             android:layout_weight="1"
-            android:text="数值设置"
+            android:text="@string/number_setting"
             android:textSize="12sp" />
 
         <Button
@@ -234,7 +234,7 @@
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:text="音量调节"
+            android:text="@string/volume_control"
             android:textSize="12sp" />
     </LinearLayout>
 
@@ -252,7 +252,7 @@
             android:layout_height="match_parent"
             android:layout_marginEnd="5dp"
             android:layout_weight="1"
-            android:text="物理地址"
+            android:text="@string/device_mac"
             android:textSize="12sp" />
 
         <Button
@@ -261,19 +261,22 @@
             android:layout_height="match_parent"
             android:layout_marginEnd="5dp"
             android:layout_weight="1"
-            android:text="时间格式"
+            android:text="@string/time_format"
             android:textSize="12sp" />
 
         <Button
-
+            android:id="@+id/firmware_version"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_marginEnd="5dp"
             android:layout_weight="1"
+            android:text="@string/firmware_version"
             android:textSize="12sp" />
 
         <Button
+            android:id="@+id/export_file"
             android:layout_width="0dp"
+            android:text="@string/export"
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:textSize="11sp" />

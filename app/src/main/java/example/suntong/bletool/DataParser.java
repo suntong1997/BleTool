@@ -11,6 +11,9 @@ import java.util.List;
 import example.suntong.bletool.interfaces.Iview;
 import example.suntong.bletool.util.TimeUtil;
 
+/**
+ * 解析回调的数据
+ */
 public class DataParser {
     Iview view;
 
@@ -43,6 +46,10 @@ public class DataParser {
             displaySetVolumnResult();
         } else if (dataList[0].equals("80") && dataList[1].equals("82")) {
             displayTimeFormat();
+        } else if (dataList[0].equals("80") && dataList[1].equals("24")) {
+            displayFirmwareVersion(dataList);
+        } else if (dataList[0].equals("81") && dataList[1].equals("26")) {
+            displaySOP2Data(dataList);
         }
     }
 
@@ -53,11 +60,11 @@ public class DataParser {
      * @param length   数据的长度
      */
     public void parseMultiData(String[][] dataList, int length) {
-        List<String> values = new ArrayList<>();
+        List<String> values = new ArrayList<>();//存储所有的数据
         if (dataList == null || dataList.length == 0) {
             return;
         }
-        //        将所有的数据都存在一个list中
+        // TODO: 2021/9/13   将所有的数据都存在一个list中
         for (int i = 0; i < length; i++) {
             if (i == 0) {//第一包数据从第13个开始
                 values.addAll(Arrays.asList(dataList[0]).subList(12, 182));
@@ -76,24 +83,27 @@ public class DataParser {
         }
         StringBuilder builder = new StringBuilder(); // 用来拼接需要的数据
 
-        // TODO: 2021/8/30 从这里开始解析每一条指令传回的数据
+        // TODO: 2021/8/30 从这里开始解析每一条指令传回的多包数据
         if (dataList[0][8].equals("81") && dataList[0][9].equals("06")) {
             parseWalkData(values, builder);
         } else if (dataList[0][8].equals("81") && dataList[0][9].equals("02")) {
             parseHeartRateData(values, builder);
         } else if (dataList[0][8].equals("81") && dataList[0][9].equals("05")) {
             parseTempData(values, builder);
+        } else if (dataList[0][8].equals("81") && dataList[0][9].equals("26")) {
+            parseSPO2Data(values, builder);
         }
 
         view.displayData(builder.toString());
     }
 
+
     //展示时间同步结果
     private void displaySyncDateResult(String[] dataList) {
         if (dataList[4].equals("01")) {
-            view.displayData("同步成功");
+            view.displayData(view.getContext().getString(R.string.sync_success));
         } else {
-            view.displayData("同步失败");
+            view.displayData(view.getContext().getString(R.string.sync_fialure));
         }
     }
 
@@ -126,7 +136,7 @@ public class DataParser {
     // 展示电量
     private void displayBatteryLevel(String[] dataList) {
         int level = Integer.parseInt(dataList[4], 16);
-        String batteryLevel = "电量:" + level + "%";
+        String batteryLevel = view.getContext().getString(R.string.battery_level) + level + "%";
         view.displayData(batteryLevel);
     }
 
@@ -152,33 +162,9 @@ public class DataParser {
 
     //展示心率控制结果
     private void displayHrControl() {
-        view.displayData("心率设置成功");
+        view.displayData(view.getContext().getString(R.string.hr_setting_success));
     }
 
-    /**
-     * 解析收到的步数数据
-     *
-     * @param values  总数据
-     * @param builder 用来拼接数据
-     */
-    @SuppressLint("DefaultLocale")
-    private void parseWalkData(List<String> values, StringBuilder builder) {
-        int hour = 0, min = 0;
-        int stepData;
-        for (int i = 0; i + 1 < values.size(); i = i + 2) {
-            stepData =
-                    Integer.parseInt(values.get(i + 1), 16) * 0x100
-                            + Integer.parseInt(values.get(i), 16);
-            builder.append(String.format("%02d:%02d--%02d   ", hour, min, stepData));
-            // 计算每个数值对应的时间
-            if ((min + 5) == 60) {
-                min = 0;
-                hour++;
-            } else {
-                min = min + 5;
-            }
-        }
-    }
 
     //展示实时的温度信息
     private void displayLiveTempData(String[] dataList) {
@@ -203,6 +189,46 @@ public class DataParser {
 
         String tempStr = date + "  " + data + "℃";
         view.displayData(tempStr);
+    }
+
+    //设置音量大小的返回结果展示
+    void displaySetVolumnResult() {
+        view.displayData(view.getContext().getString(R.string.volume_setting_success));
+    }
+
+    //展示设备的物理地址
+    private void displayMacAddress(String[] dataList) {
+        view.displayData("MAC:" + dataList[4] + ":" + dataList[5] + ":" + dataList[6] + ":" + dataList[7] + ":" + dataList[8] + ":" + dataList[9]);
+    }
+
+    private void displayTimeFormat() {
+        view.displayData(view.getContext().getString(R.string.date_format_setting_success));
+    }
+
+    private void displayLiveTempResult() {
+        view.displayData(view.getContext().getString(R.string.temp_control_success));
+    }
+
+    private void displayFirmwareVersion(String[] dataList) {
+
+    }
+
+    private void displaySOP2Data(String[] dataList) {
+        int hour = 0, min = 0;
+        int stepData;
+        StringBuilder builder = new StringBuilder();
+        for (int i = 4; i + 1 < dataList.length; i++) {
+            stepData = Integer.parseInt(dataList[i], 16);
+            builder.append(String.format("%02d:%02d--%02d   ", hour, min, stepData));
+            // 计算每个数值对应的时间
+            if ((min + 5) == 60) {
+                min = 0;
+                hour++;
+            } else {
+                min = min + 5;
+            }
+        }
+        view.displayData(builder.toString());
     }
 
     /**
@@ -262,22 +288,47 @@ public class DataParser {
         }
     }
 
-    //设置音量大小的返回结果展示
-    void displaySetVolumnResult() {
-        view.displayData("音量设置完成");
+
+    //展示从设备获取的sop2的值
+    private void parseSPO2Data(List<String> values, StringBuilder builder) {
+        int hour = 0, min = 0;
+        int stepData;
+        for (int i = 0; i + 1 < values.size(); i++) {
+            stepData = Integer.parseInt(values.get(i), 16);
+            builder.append(String.format("%02d:%02d--%02d   ", hour, min, stepData));
+            // 计算每个数值对应的时间
+            if ((min + 5) == 60) {
+                min = 0;
+                hour++;
+            } else {
+                min = min + 5;
+            }
+        }
     }
 
-    //展示设备的物理地址
-    private void displayMacAddress(String[] dataList) {
-        view.displayData("MAC:" + dataList[4] + ":" + dataList[5] + ":" + dataList[6] + ":" + dataList[7] + ":" + dataList[8] + ":" + dataList[9]);
-    }
-
-    private void displayTimeFormat() {
-        view.displayData("时间格式设置成功");
-    }
-
-    private void displayLiveTempResult() {
-        view.displayData("温度控制设置成功");
+    /**
+     * 解析收到的步数数据
+     *
+     * @param values  总数据
+     * @param builder 用来拼接数据
+     */
+    @SuppressLint("DefaultLocale")
+    private void parseWalkData(List<String> values, StringBuilder builder) {
+        int hour = 0, min = 0;
+        int stepData;
+        for (int i = 0; i + 1 < values.size(); i = i + 2) {
+            stepData =
+                    Integer.parseInt(values.get(i + 1), 16) * 0x100
+                            + Integer.parseInt(values.get(i), 16);
+            builder.append(String.format("%02d:%02d--%02d   ", hour, min, stepData));
+            // 计算每个数值对应的时间
+            if ((min + 5) == 60) {
+                min = 0;
+                hour++;
+            } else {
+                min = min + 5;
+            }
+        }
     }
 
 }

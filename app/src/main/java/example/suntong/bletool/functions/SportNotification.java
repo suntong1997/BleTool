@@ -11,7 +11,7 @@ import example.suntong.bletool.service.BluetoothLeService;
 public class SportNotification {
     private static final String TAG = SportNotification.class.getSimpleName();
 
-    static public void onUpdateSoprtNotification(Iview view, BluetoothLeService bluetoothLeService, String deviceAddress,Object obj) {
+    static public void onUpdateSoprtNotification(BluetoothLeService bluetoothLeService, String deviceAddress, Object obj) {
         byte CMD_MULTI_PKG = 0x7F;
         int CRC;
         byte low_CRC;
@@ -104,71 +104,68 @@ public class SportNotification {
         dataList.add(11, high_CMD_length);
 
 
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                int index = 0;//记录读取到datalist第几个数据
-                byte[] value = new byte[182];
-                int PKG_NUM = (dataList.size() - 4) / 178 == 0 ? (dataList.size() - 4) / 178 : (dataList.size() - 4) / 178 + 1;
-                int field_number = 0;
-                byte low_field_number = 0;
-                byte high_field_number = 0;
+        new Thread(() -> {
+            int index = 0;//记录读取到datalist第几个数据
+            byte[] value = new byte[182];
+            int PKG_NUM1 = (dataList.size() - 4) / 178 == 0 ? (dataList.size() - 4) / 178 : (dataList.size() - 4) / 178 + 1;
+            int field_number1 = 0;
+            byte low_field_number1 = 0;
+            byte high_field_number1 = 0;
 
-                synchronized (obj) {
-                    for (int i = 0; i < PKG_NUM; i++) {
+            synchronized (obj) {
+                for (int i = 0; i < PKG_NUM1; i++) {
 
-                        if (i == 0) {
-                            for (int j = 0; j < 182; j++) {
-                                value[j] = dataList.get(j);
-                                index++;
-                            }
+                    if (i == 0) {
+                        for (int j = 0; j < 182; j++) {
+                            value[j] = dataList.get(j);
+                            index++;
+                        }
 
-                        } else if (i == (PKG_NUM - 1)) { // 最后一包需要判断数据长度不一定为182需要另外处理
-                            int size = (dataList.size()) % 178;
-                            if ((dataList.size()) % 178 == 0) {
-                                size = 182;
-                            }
-                            value = new byte[size];
-                            value[0] = 0x7F;
-                            value[1] = low_CRC;
-                            field_number = (byte) (field_number + 1);
-                            low_field_number = (byte) (field_number & 0xFF);
-                            high_field_number = (byte) ((field_number & 0xFF00) >> 0x08);
-                            value[2] = low_field_number;
-                            value[3] = high_field_number;
-                            for (int j = 4; j < size; j++) {
-                                value[j] = dataList.get(index);
-                                index++;
-                                if (dataList.size() == index) {
-                                    break;
-                                }
-                            }
-
-                        } else {
-                            value[0] = 0x7F;
-                            value[1] = low_CRC;
-                            field_number = (byte) (field_number + 1);
-                            low_field_number = (byte) (field_number & 0xFF);
-                            high_field_number = (byte) ((field_number & 0xFF00) >> 0x08);
-                            value[2] = low_field_number;
-                            value[3] = high_field_number;
-                            for (int j = 4; j < 182; j++) {
-                                value[j] = dataList.get(index);
-                                index++;
+                    } else if (i == (PKG_NUM1 - 1)) { // 最后一包需要判断数据长度不一定为182需要另外处理
+                        int size = (dataList.size()) % 178;
+                        if ((dataList.size()) % 178 == 0) {
+                            size = 182;
+                        }
+                        value = new byte[size];
+                        value[0] = 0x7F;
+                        value[1] = low_CRC;
+                        field_number1 = (byte) (field_number1 + 1);
+                        low_field_number1 = (byte) (field_number1 & 0xFF);
+                        high_field_number1 = (byte) ((field_number1 & 0xFF00) >> 0x08);
+                        value[2] = low_field_number1;
+                        value[3] = high_field_number1;
+                        for (int j = 4; j < size; j++) {
+                            value[j] = dataList.get(index);
+                            index++;
+                            if (dataList.size() == index) {
+                                break;
                             }
                         }
 
-                        final StringBuilder stringBuilder = new StringBuilder(value.length);
-                        for (byte byteChar : value)
-                            stringBuilder.append(String.format("%02X ", byteChar));
-                        Log.w(TAG, "sendMultiPkgCmd: " + stringBuilder.toString());
-
-                        bluetoothLeService.writeCharacteristic(deviceAddress, value);
-                        try {
-                            obj.wait(); // 等待写入后的回调
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
+                    } else {
+                        value[0] = 0x7F;
+                        value[1] = low_CRC;
+                        field_number1 = (byte) (field_number1 + 1);
+                        low_field_number1 = (byte) (field_number1 & 0xFF);
+                        high_field_number1 = (byte) ((field_number1 & 0xFF00) >> 0x08);
+                        value[2] = low_field_number1;
+                        value[3] = high_field_number1;
+                        for (int j = 4; j < 182; j++) {
+                            value[j] = dataList.get(index);
+                            index++;
                         }
+                    }
+
+                    final StringBuilder stringBuilder = new StringBuilder(value.length);
+                    for (byte byteChar : value)
+                        stringBuilder.append(String.format("%02X ", byteChar));
+                    Log.w(TAG, "sendMultiPkgCmd: " + stringBuilder.toString());
+
+                    bluetoothLeService.writeCharacteristic(deviceAddress, value);
+                    try {
+                        obj.wait(); // 等待写入后的回调
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
                     }
                 }
             }

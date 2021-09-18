@@ -21,7 +21,7 @@ public class DatePicker {
      */
     public static byte getDayApart(int year, int monthOfYear, int dayOfMonth, Calendar calendar, Context context) {
 
-        @SuppressLint("SimpleDateFormat") DateFormat format = new SimpleDateFormat("yyyy-MM-dd");
+        DateFormat format = new SimpleDateFormat("yyyy-MM-dd");
         String startDate = year + "-" + (monthOfYear + 1) + "-" + dayOfMonth;
         String endDate = calendar.get(Calendar.YEAR) + "-" + (calendar.get(Calendar.MONTH) + 1)
                 + "-" + calendar.get(Calendar.DAY_OF_MONTH);
@@ -33,7 +33,7 @@ public class DatePicker {
             long endTime = end.getTime();
 
             if (startTime > endTime) {
-                ToastUtil.showShort(context, "请选择7天内的日期");
+                ToastUtil.showShort(context, context.getString(R.string.select_days_within_seven));
             }
 
             intervalDay = (byte) ((endTime - startTime) / 24 / 60 / 60 / 1000);//计算间隔天数

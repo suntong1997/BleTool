@@ -5,12 +5,11 @@ import android.widget.Button;
 import android.widget.PopupMenu;
 
 import example.suntong.bletool.BluetoothCommand;
-import example.suntong.bletool.interfaces.Iview;
 import example.suntong.bletool.R;
 import example.suntong.bletool.service.BluetoothLeService;
 
 public class TimeFormat {
-    public static void onSetTimeFormat(Context context, Iview view, Button setTimeModeBtn, BluetoothLeService bluetoothLeService, String deviceAddress) {
+    public static void onSetTimeFormat(Context context, Button setTimeModeBtn, BluetoothLeService bluetoothLeService, String deviceAddress) {
         PopupMenu popupMenu = new PopupMenu(context, setTimeModeBtn);
         popupMenu.getMenuInflater().inflate(R.menu.pop_time_mode_menu, popupMenu.getMenu());
         popupMenu.show();

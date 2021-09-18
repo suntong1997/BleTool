@@ -1,8 +1,6 @@
 package example.suntong.bletool;
 
-import android.app.Activity;
 import android.content.Context;
-import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.Uri;
 import android.text.TextUtils;
@@ -15,6 +13,7 @@ import java.util.Objects;
 
 import example.suntong.bletool.bean.DeviceItemBean;
 import example.suntong.bletool.service.BluetoothLeService;
+
 
 
 public class FilterHelper {

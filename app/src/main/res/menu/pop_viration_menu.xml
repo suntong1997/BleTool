@@ -2,14 +2,14 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
         android:id="@+id/no_vibration"
-        android:title="关闭震动" />
+        android:title="@string/menu_stop_vibrato" />
 
     <item
         android:id="@+id/normal_vibration"
-        android:title="正常震动" />
+        android:title="@string/menu_normal_vibrato" />
 
     <item
         android:id="@+id/strong_vibration"
-        android:title="强震动" />
+        android:title="@string/menu_strong_vobrato" />
 
 </menu>

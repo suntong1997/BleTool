@@ -8,6 +8,7 @@
         <entry key="..\:/Users/a520s/Desktop/BleTool/app/src/main/res/drawable/function_selector.xml" value="0.36564102564102563" />
         <entry key="..\:/Users/a520s/Desktop/BleTool/app/src/main/res/drawable/progress_bar_background.xml" value="0.36564102564102563" />
         <entry key="..\:/Users/a520s/Desktop/BleTool/app/src/main/res/drawable/shape_progressbar_progress.xml" value="0.32557077625570774" />
+        <entry key="..\:/Users/a520s/Desktop/BleTool/app/src/main/res/layout/actionbar_indeterminate_progress.xml" value="0.31574074074074077" />
         <entry key="..\:/Users/a520s/Desktop/BleTool/app/src/main/res/layout/activity_base.xml" value="0.23802083333333332" />
         <entry key="..\:/Users/a520s/Desktop/BleTool/app/src/main/res/layout/activity_ble_function.xml" value="0.35520833333333335" />
         <entry key="..\:/Users/a520s/Desktop/BleTool/app/src/main/res/layout/activity_debug.xml" value="0.31574074074074077" />
@@ -15,7 +16,9 @@
         <entry key="..\:/Users/a520s/Desktop/BleTool/app/src/main/res/layout/activity_main.xml" value="0.16077898550724637" />
         <entry key="..\:/Users/a520s/Desktop/BleTool/app/src/main/res/layout/activity_number_packer.xml" value="0.31574074074074077" />
         <entry key="..\:/Users/a520s/Desktop/BleTool/app/src/main/res/layout/dialog_select_date.xml" value="0.31574074074074077" />
+        <entry key="..\:/Users/a520s/Desktop/BleTool/app/src/main/res/layout/dialog_select_number.xml" value="0.39589442815249265" />
         <entry key="..\:/Users/a520s/Desktop/BleTool/app/src/main/res/layout/listitem_device.xml" value="0.16077898550724637" />
+        <entry key="..\:/Users/a520s/Desktop/BleTool/app/src/main/res/layout/number_picker_dialog.xml" value="0.19027777777777777" />
         <entry key="..\:/Users/a520s/Desktop/BleTool/app/src/main/res/menu/device_control.xml" value="0.2109375" />
         <entry key="..\:/Users/a520s/Desktop/BleTool/app/src/main/res/menu/file_explorer_menu.xml" value="0.35520833333333335" />
         <entry key="..\:/Users/a520s/Desktop/BleTool/app/src/main/res/menu/main.xml" value="0.1984375" />
@@ -23,6 +26,7 @@
         <entry key="..\:/Users/a520s/Desktop/BleTool/app/src/main/res/menu/pop_temp_menu.xml" value="0.18055555555555555" />
         <entry key="..\:/Users/a520s/Desktop/BleTool/app/src/main/res/menu/pop_time_mode_menu.xml" value="0.1597222222222222" />
         <entry key="..\:/Users/a520s/Desktop/BleTool/app/src/main/res/menu/pop_update_mode_menu.xml" value="0.31574074074074077" />
+        <entry key="..\:/Users/a520s/Desktop/BleTool/app/src/main/res/menu/pop_viration_menu.xml" value="0.31574074074074077" />
       </map>
     </option>
   </component>

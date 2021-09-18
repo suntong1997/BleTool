@@ -8,12 +8,13 @@ import java.util.Calendar;
 import java.util.Locale;
 
 import example.suntong.bletool.DatePicker;
+import example.suntong.bletool.R;
 import example.suntong.bletool.interfaces.Iview;
 import example.suntong.bletool.util.ToastUtil;
 import example.suntong.bletool.service.BluetoothLeService;
 
 public class HistoryData {
-    private static Calendar calendar = Calendar.getInstance(Locale.CHINA);
+    private static final Calendar calendar = Calendar.getInstance(Locale.CHINA);
 
     @SuppressLint("ResourceType")
     public static void onRequestDataOfDay(Context context, Iview iView, BluetoothLeService bluetoothLeService, String deviceAddress, int cmd_class, int cmd_id)  {
@@ -28,7 +29,7 @@ public class HistoryData {
                             DatePicker.getDayApart(year, monthOfYear, dayOfMonth, calendar, context);
 
                     if (intervalDay > 6) {
-                        ToastUtil.showShort(context, "请选择七天内的日期");
+                        ToastUtil.showShort(context, context.getString(R.string.select_days_within_seven));
                     } else if (intervalDay == -1) {
                         iView.displayData("获取日期失败");
                     }

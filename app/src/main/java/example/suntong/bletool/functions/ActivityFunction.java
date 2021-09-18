@@ -6,6 +6,7 @@ import android.util.Log;
 import java.util.ArrayList;
 import java.util.List;
 
+import example.suntong.bletool.R;
 import example.suntong.bletool.interfaces.Iview;
 import example.suntong.bletool.service.BluetoothLeService;
 
@@ -24,7 +25,7 @@ public class ActivityFunction {
 
         int image_id = 10000;
         byte lowImageId = (byte) (image_id & 0xFF);
-        byte highImgeId = (byte) ((image_id & 0xFF00) >> 0x08);
+        byte highImageId = (byte) ((image_id & 0xFF00) >> 0x08);
 
         byte category_id = 17;
 
@@ -73,7 +74,7 @@ public class ActivityFunction {
             dataList.add(lowActivityId);
             dataList.add(highActivityId);
             dataList.add(lowImageId);
-            dataList.add(highImgeId);
+            dataList.add(highImageId);
             dataList.add(activityUnicodelength);
 
             dataList.add(activityUnicodeByte[1]); // 添加activity数据
@@ -93,7 +94,7 @@ public class ActivityFunction {
         }
 
         if (dataList.size() < 169) {
-            view.displayData("选择数值过小");
+            view.displayData(context.getString(R.string.setting_number_small));
             return;
         }
         parseActivityFuc(view, CMD_MULTI_PKG, CMD_CLASS, CMD_ID, total_activity_number, dataList, context, obj, bluetoothLeService, deviceAddress);
@@ -204,7 +205,7 @@ public class ActivityFunction {
                                 e.printStackTrace();
                             }
                         }
-                        view.displayData("发送完成");
+                        view.displayData(context.getString(R.string.send_success));
                     }
                 })
                 .start();
