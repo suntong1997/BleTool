@@ -44,18 +44,20 @@ public class BaseActivity extends AppCompatActivity {
 
         deviceAddress = getIntent().getStringExtra("device_address");
         deviceName = getIntent().getStringExtra("device_name");
-    }
-
-
-    @Override
-    protected void onResume() {
-        super.onResume();
         // 蓝牙连接
         if (bluetoothLeService != null)
             Log.e(TAG, "onCreate: " + bluetoothLeService.connect(deviceAddress));
 
         Intent gattServiceIntent = new Intent(this, BluetoothLeService.class);
         bindService(gattServiceIntent, mServiceConnection, BIND_AUTO_CREATE);
+
+    }
+
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
     }
 
     @Override

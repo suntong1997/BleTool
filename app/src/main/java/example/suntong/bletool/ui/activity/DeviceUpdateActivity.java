@@ -715,13 +715,13 @@ public class DeviceUpdateActivity extends BaseActivity implements View.OnClickLi
             updateProcessPercentTxt.setText(String.valueOf(progress));
             int updatingTxt = percent % 80;
             if (updatingTxt >= 0 && updatingTxt < 20) {
-                updateBtn.setText(R.string.failure_update);
+                updateBtn.setText(R.string.updating);
             } else if (updatingTxt >= 20 && updatingTxt < 40) {
-                updateBtn.setText(R.string.failure_update+".");
+                updateBtn.setText(R.string.updating+".");
             } else if (updatingTxt >= 40 && updatingTxt < 60) {
-                updateBtn.setText(R.string.failure_update+"..");
+                updateBtn.setText(R.string.updating+"..");
             } else {
-                updateBtn.setText(R.string.failure_update+"...");
+                updateBtn.setText(R.string.updating+"...");
             }
         });
     }

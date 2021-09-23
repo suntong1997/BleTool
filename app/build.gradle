@@ -10,8 +10,8 @@ android {
         applicationId "example.suntong.bletool"
         minSdk 21
         targetSdk 28
-        versionCode 103
-        versionName "1.0.3"
+        versionCode 104
+        versionName "1.0.4"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -45,4 +45,6 @@ dependencies {
     implementation 'com.jakewharton:butterknife:10.2.3'
     annotationProcessor 'com.jakewharton:butterknife-compiler:10.2.3'
     implementation 'no.nordicsemi.android:dfu:1.9.0'
+    implementation files('libs/jxl-2.6.12.jar')
+
 }

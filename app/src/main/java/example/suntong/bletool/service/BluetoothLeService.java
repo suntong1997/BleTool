@@ -22,6 +22,7 @@ import java.util.Objects;
 import java.util.UUID;
 
 import example.suntong.bletool.GattAttributes;
+import example.suntong.bletool.ui.activity.DebugActivity;
 
 public class BluetoothLeService extends Service {
     private static final String TAG = BluetoothLeService.class.getSimpleName();
@@ -250,6 +251,12 @@ public class BluetoothLeService extends Service {
         if (mBluetoothAdapter == null || mBluetoothGatt == null) {
             Log.w(TAG, "蓝牙适配器未初始化");
             return;
+        }
+
+        if (data != null && data.length > 0) {
+            final StringBuilder stringBuilder = new StringBuilder(data.length);
+            for (byte byteChar : data) stringBuilder.append(String.format("%02X ", byteChar));
+            DebugActivity.sendData = "send: " + stringBuilder.toString();
         }
 
         BluetoothGatt gatt = gattMap.get(address);

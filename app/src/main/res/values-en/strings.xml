@@ -97,4 +97,6 @@
     <string name="complete_update">completed update</string>
     <string name="failure_send">failure send</string>
     <string name="updating">updating</string>
+    <string name="firmware_version">firmware version</string>
+    <string name="export_log">export</string>
 </resources>

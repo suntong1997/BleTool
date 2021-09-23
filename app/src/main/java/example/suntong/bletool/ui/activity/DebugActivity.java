@@ -53,7 +53,11 @@ public class DebugActivity extends BaseActivity implements View.OnClickListener,
     private boolean isReceiveMultiPkg = false;
     private int index = 0;
     private int num;
+    boolean isDiscoveryService = false;
     private String displayTxt;
+    public static String sendData = "";//保存发送的指令
+    private String receiveData = "receive: ";//保存接收到的数据
+    Intent intent;
 
     @BindView(R.id.tool_bar)
     Toolbar toolbar;
@@ -101,8 +105,12 @@ public class DebugActivity extends BaseActivity implements View.OnClickListener,
     Button getFirmwareVersion;
     @BindView(R.id.history_spo2)
     Button historySpo2Btn;
-    @BindView(R.id.export_file)
-    Button exportBtn;
+    @BindView(R.id.export_log)
+    Button exportLogBtn;
+    @BindView(R.id.export_hex)
+    Button exportHexBtn;
+    @BindView(R.id.persion_info)
+    Button setPersionInfo;
 
     // TODO 处理接收到的广播
     private final BroadcastReceiver mGattUpdateReceiver =
@@ -117,8 +125,17 @@ public class DebugActivity extends BaseActivity implements View.OnClickListener,
                         invalidateOptionsMenu();
                     } else if (BluetoothLeService.ACTION_GATT_DISCONNECTED.equals(action)) { // 处理断开广播
                         mConnected = false;
+                        isDiscoveryService = false;
                         updateConnectionState(R.string.disconnected);
                         invalidateOptionsMenu();
+                    } else if (BluetoothLeService.ACTION_GATT_SERVICES_DISCOVERED.equals(action)) {
+                        try {
+                            Thread.sleep(500);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        isDiscoveryService = true;
+
                     } else if (BluetoothLeService.ACTION_DATA_AVAILABLE.equals(action)) {//处理接收到的数据
                         parseReceiveData(intent);
                     } else if (BluetoothLeService.CHARACTERISTIC_WRITE_SUCCESS.equals(action)) {
@@ -150,11 +167,28 @@ public class DebugActivity extends BaseActivity implements View.OnClickListener,
     }
 
     @Override
+    protected void onStop() {
+        super.onStop();
+        isDiscoveryService = false;
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        disconnect(deviceAddress);
+    }
+
+    @Override
     public void onActivityResult(int requestCode, int resultCode, Intent resultData) {
         super.onActivityResult(requestCode, resultCode, resultData);
         if (requestCode == 1111 && resultCode == Activity.RESULT_OK) {
             num = resultData.getIntExtra("number", 1);
             displayData(getString(R.string.value_setting) + num);
+        }
+        if (requestCode == 1122 && resultCode == Activity.RESULT_OK) {
+            byte[] cmd = resultData.getByteArrayExtra("persion_info_cmd");
+            writeCharacteristic(deviceAddress, cmd);
+            receiveData = "receive: ";
         }
     }
 
@@ -191,6 +225,7 @@ public class DebugActivity extends BaseActivity implements View.OnClickListener,
 
     private void parseReceiveData(Intent intent) {
         String data = intent.getStringExtra(BluetoothLeService.EXTRA_DATA);
+
         Log.w(TAG, "onReceive:" + data);
         String[] dataList = data.split(" "); // 把传过来的数据字符串拆分成数组
 
@@ -199,10 +234,12 @@ public class DebugActivity extends BaseActivity implements View.OnClickListener,
             isReceiveMultiPkg = true;//设置多包接收标志为true
             receivePkgNum = Byte.parseByte(dataList[4], 16) + Byte.parseByte(dataList[5], 16) * 0x100;//计算包数
             receiveMultiPkg[0] = dataList;
+            receiveData = receiveData + data + "\n";
             index++;
         } else if (isReceiveMultiPkg && index == Byte.parseByte(dataList[2])) {
             if (index < receivePkgNum) {
                 receiveMultiPkg[index] = dataList;
+                receiveData = receiveData + data + "\n";
                 index++;
             }
         }
@@ -217,6 +254,7 @@ public class DebugActivity extends BaseActivity implements View.OnClickListener,
         //如果接收到的数据是单包则调用该方法
         if (!dataList[0].equals("7F")) {
             dataParser.parseSingleData(dataList);
+            receiveData = receiveData + data;
         }
     }
 
@@ -288,7 +326,7 @@ public class DebugActivity extends BaseActivity implements View.OnClickListener,
                 HistoryData.onRequestDataOfDay(mContext, this, bluetoothLeService, deviceAddress, 0x01, 0x26);
                 break;
             case R.id.set_number:
-                Intent intent = new Intent(this, NumberPackerActivity.class);
+                intent = new Intent(this, NumberPackerActivity.class);
                 startActivityForResult(intent, 1111);
                 break;
             case R.id.set_volume:
@@ -303,21 +341,19 @@ public class DebugActivity extends BaseActivity implements View.OnClickListener,
             case R.id.firmware_version:
                 writeCharacteristic(deviceAddress, BluetoothCommand.GET_FIRMWARE_VERSION);
                 break;
-            case R.id.export_file:
+            case R.id.export_log:
+                //导出数据
+                writeToFile(displayTxt, "数据解析");
 
-                writeToFile();
+            case R.id.export_hex:
+                writeToFile(sendData + "\n" + receiveData, "原始数据");
+                sendData = "send: ";
+                receiveData = "receive: ";
+                break;
+            case R.id.persion_info:
+                intent = new Intent(this, PersionInfoActivity.class);
+                startActivityForResult(intent, 1122);
         }
-    }
-
-    private void writeToFile() {
-        if (displayEdit == null) {
-            ToastUtil.showShort(mContext, "数据为空");
-            return;
-        }
-        String filePath = Environment.getExternalStorageDirectory().getAbsolutePath() + "/蓝牙历史心率解析/";
-        String fileName = TimeUtil.getCurrentDate() + ".txt";
-
-        FileUtil.getInstance().writeToFile(displayTxt,filePath,fileName);
     }
 
     //设置控件点击事件
@@ -342,7 +378,26 @@ public class DebugActivity extends BaseActivity implements View.OnClickListener,
         setTimeModeBtn.setOnClickListener(this);
         getFirmwareVersion.setOnClickListener(this);
         historySpo2Btn.setOnClickListener(this);
-        exportBtn.setOnClickListener(this);
+        exportLogBtn.setOnClickListener(this);
+        exportHexBtn.setOnClickListener(this);
+        setPersionInfo.setOnClickListener(this);
+    }
+
+    private void writeToFile(String displayTxt, String fileName) {
+        if (displayEdit == null) {
+            ToastUtil.showShort(mContext, "数据为空");
+            return;
+        }
+        String filePath = Environment.getExternalStorageDirectory().getAbsolutePath() + "/" + fileName + "/";
+        fileName = TimeUtil.getCurrentDate() + ".txt";
+
+        boolean result = FileUtil.getInstance().writeToFile(displayTxt, filePath, fileName);
+        if (result && displayTxt != null) {
+            ToastUtil.showShort(mContext, "导出成功");
+        } else {
+            ToastUtil.showShort(mContext, "导出失败");
+            return;
+        }
     }
 
     // 展示读取到的数据到编辑框

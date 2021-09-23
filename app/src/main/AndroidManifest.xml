@@ -25,6 +25,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.BleTool">
         <activity
+            android:name=".ui.activity.PersionInfoActivity"
+            android:exported="true" />
+        <activity
             android:name=".ui.activity.DebugActivity"
             android:exported="true" />
         <activity
@@ -59,11 +62,10 @@
             android:exported="false">
             <intent-filter>
                 <action android:name="no.nordicsemi.android.action.DFU_UPLOAD" />
+
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </service>
-
-
         <service
             android:name=".service.BluetoothLeService"
             android:enabled="true"

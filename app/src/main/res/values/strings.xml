@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name" translatable="false">Kaha BLE Tool-1.0.3</string>
+    <string name="app_name" translatable="false">Kaha BLE Tool-1.0.4</string>
 
     <string name="ble_not_supported">设备不支持BLE</string>
     <string name="label_data">数据:</string>
@@ -108,5 +108,5 @@
     <string name="failure_send">发送失败</string>
     <string name="updating">升级中</string>
     <string name="firmware_version">固件版本</string>
-    <string name="export">导出</string>
+    <string name="export_log">导出日志</string>
 </resources>

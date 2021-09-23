@@ -274,9 +274,48 @@
             android:textSize="12sp" />
 
         <Button
-            android:id="@+id/export_file"
+            android:id="@+id/export_log"
             android:layout_width="0dp"
-            android:text="@string/export"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:text="@string/export_log"
+            android:textSize="11sp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/dimen_50"
+        android:layout_marginStart="20dp"
+        android:layout_marginEnd="20sp">
+
+        <Button
+            android:id="@+id/export_hex"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_marginEnd="5dp"
+            android:layout_weight="1"
+            android:text="原始数据"
+            android:textSize="12sp" />
+
+        <Button
+            android:id="@+id/persion_info"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_marginEnd="5dp"
+            android:layout_weight="1"
+            android:text="个人信息"
+            android:textSize="12sp" />
+
+        <Button
+
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_marginEnd="5dp"
+            android:layout_weight="1"
+            android:textSize="12sp" />
+
+        <Button
+            android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:textSize="11sp" />

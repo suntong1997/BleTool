@@ -1,14 +1,20 @@
 package example.suntong.bletool;
 
 import android.annotation.SuppressLint;
+import android.content.Context;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import example.suntong.bletool.bean.HistoryHRBean;
+import example.suntong.bletool.bean.HistorySPO2Bean;
 import example.suntong.bletool.interfaces.Iview;
+import example.suntong.bletool.util.ExcelUtil;
 import example.suntong.bletool.util.TimeUtil;
 
 /**
@@ -16,6 +22,7 @@ import example.suntong.bletool.util.TimeUtil;
  */
 public class DataParser {
     Iview view;
+    private String FILEPATH = "/sdcard/历史数据解析/";
 
     public DataParser(Iview view) {
         this.view = view;
@@ -50,6 +57,8 @@ public class DataParser {
             displayFirmwareVersion(dataList);
         } else if (dataList[0].equals("81") && dataList[1].equals("26")) {
             displaySOP2Data(dataList);
+        } else if (dataList[0].equals("80") && dataList[1].equals("81")) {
+            view.displayData("写入个人信息成功");
         }
     }
 
@@ -214,21 +223,29 @@ public class DataParser {
     }
 
     private void displaySOP2Data(String[] dataList) {
+        List<HistorySPO2Bean> spo2List = new ArrayList<>();
+//        List<List<HistorySPO2Bean>> list = new ArrayList<>();
+        HistorySPO2Bean bean;
         int hour = 0, min = 0;
         int stepData;
         StringBuilder builder = new StringBuilder();
         for (int i = 4; i + 1 < dataList.length; i++) {
             stepData = Integer.parseInt(dataList[i], 16);
             builder.append(String.format("%02d:%02d--%02d   ", hour, min, stepData));
+            bean = new HistorySPO2Bean(hour, min, stepData);
+            spo2List.add(bean);
             // 计算每个数值对应的时间
             if ((min + 5) == 60) {
                 min = 0;
                 hour++;
+//                list.add(spo2List);
+//                spo2List.clear();
             } else {
                 min = min + 5;
             }
         }
         view.displayData(builder.toString());
+        exportSPO2Excel(view.getContext(), spo2List);
     }
 
     /**
@@ -239,6 +256,12 @@ public class DataParser {
      */
     @SuppressLint("DefaultLocale")
     private void parseHeartRateData(List<String> values, StringBuilder builder) {
+        List<HistoryHRBean> beanList = new ArrayList<>();
+        String sheetName = "心率数据";
+        File file = new File(FILEPATH);
+        if (!file.exists()) {
+            file.mkdirs();
+        }
         int hour = 0, min = 0, HR, DBP, SBP, RR;
         for (int i = 0; i + 3 < values.size(); i = i + 4) {
             HR = Integer.parseInt(values.get(i), 16);
@@ -257,7 +280,11 @@ public class DataParser {
             } else {
                 min = min + 5;
             }
+            HistoryHRBean bean = new HistoryHRBean(hour, min, HR, DBP, SBP, RR);
+            beanList.add(bean);
         }
+        exportExcel(view.getContext(), beanList);
+
     }
 
     /**
@@ -291,11 +318,16 @@ public class DataParser {
 
     //展示从设备获取的sop2的值
     private void parseSPO2Data(List<String> values, StringBuilder builder) {
+        List<HistorySPO2Bean> spo2List = new ArrayList<>();
+        Log.w("parseSPO2Data", "parseSPO2Data: "+values.size() );
+        HistorySPO2Bean bean;
         int hour = 0, min = 0;
         int stepData;
         for (int i = 0; i + 1 < values.size(); i++) {
             stepData = Integer.parseInt(values.get(i), 16);
             builder.append(String.format("%02d:%02d--%02d   ", hour, min, stepData));
+            bean = new HistorySPO2Bean(hour, min, stepData);
+            spo2List.add(bean);
             // 计算每个数值对应的时间
             if ((min + 5) == 60) {
                 min = 0;
@@ -304,6 +336,8 @@ public class DataParser {
                 min = min + 5;
             }
         }
+
+        exportSPO2Excel(view.getContext(), spo2List);
     }
 
     /**
@@ -314,6 +348,9 @@ public class DataParser {
      */
     @SuppressLint("DefaultLocale")
     private void parseWalkData(List<String> values, StringBuilder builder) {
+        Log.w("parseWalkData", "parseWalkData: "+values.size());
+        List<HistorySPO2Bean> spo2List = new ArrayList<>();
+        HistorySPO2Bean bean;
         int hour = 0, min = 0;
         int stepData;
         for (int i = 0; i + 1 < values.size(); i = i + 2) {
@@ -321,6 +358,8 @@ public class DataParser {
                     Integer.parseInt(values.get(i + 1), 16) * 0x100
                             + Integer.parseInt(values.get(i), 16);
             builder.append(String.format("%02d:%02d--%02d   ", hour, min, stepData));
+            bean = new HistorySPO2Bean(hour, min, stepData);
+            spo2List.add(bean);
             // 计算每个数值对应的时间
             if ((min + 5) == 60) {
                 min = 0;
@@ -329,6 +368,40 @@ public class DataParser {
                 min = min + 5;
             }
         }
+        exportSPO2Excel(view.getContext(), spo2List);
     }
 
+    private <T> void exportExcel(Context context, List<T> list) {
+        String filePath = FILEPATH;
+        File file = new File(FILEPATH);
+        if (!file.exists()) {
+            file.mkdirs();
+        }
+
+        String excelFileName = TimeUtil.getCurrentDate() + ".xls";
+        String[] title = {"time", "HR", "DBP", "SBP", "RR"};
+        String sheetName = "心率数据";
+
+        filePath = filePath + excelFileName;
+        ExcelUtil.initExcel(filePath, sheetName, title);
+
+        ExcelUtil.writeHRListToExcel(list, filePath, context);
+    }
+
+    private void exportSPO2Excel(Context context, List<HistorySPO2Bean> list) {
+        String filePath = FILEPATH;
+        File file = new File(FILEPATH);
+        if (!file.exists()) {
+            file.mkdirs();
+        }
+
+        String excelFileName = TimeUtil.getCurrentDate() + ".xls";
+        String[] title = {"time", "0min", "5min", "10min", "15min", "20min", "25min", "30min", "35min", "40min", "45min", "50min", "55min"};
+        String sheetName = "SPO2数据";
+
+        filePath = filePath + excelFileName;
+        ExcelUtil.initExcel(filePath, sheetName, title);
+
+        ExcelUtil.writeSPO2ListToExcel(list, filePath, context);
+    }
 }
